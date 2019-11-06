@@ -30,6 +30,8 @@ module.exports = class btse extends Exchange {
                 'api': {
                     'web': 'https://www.btse.com',
                     'api': 'https://api.btse.com',
+                    'spotv2': 'https://api.btse.com/spot/v2',
+                    'futuresv1': 'https://api.btse.com/futures/api/v1',
                     'testnet': 'https://testapi.btse.io'
                 },
                 'www': 'https://www.btse.com',
@@ -41,42 +43,19 @@ module.exports = class btse extends Exchange {
                 'referral': 'https://www.btse.com/ref?c=0Ze7BK',
             },
             'api': {
-                'public': {
+                'spotv2': {
                     'get': [
-                        'ping',
-                        'test',
-                        'getinstruments',
-                        'index',
-                        'getcurrencies',
-                        'getorderbook',
-                        'getlasttrades',
-                        'getsummary',
-                        'stats',
-                        'getannouncments',
+                        'time',
                     ],
                 },
                 'private': {
                     'get': [
-                        'account',
-                        'getopenorders',
-                        'positions',
-                        'orderhistory',
-                        'orderstate',
-                        'tradehistory',
-                        'newannouncements',
                     ],
                     'post': [
-                        'buy',
-                        'sell',
-                        'edit',
-                        'cancel',
-                        'cancelall',
                     ],
                 },
             },
             'exceptions': {
-                // 0 or absent Success, No error
-                '000': PermissionDenied, // "api_not_enabled" User didn't enable API for the Account
             },
             'precisionMode': TICK_SIZE,
             'options': {
@@ -84,4 +63,12 @@ module.exports = class btse extends Exchange {
             },
         });
     }
+
+    async loadTimeDifference () {
+        const serverTime = await this.spotv2getTime()
+        const after = this.milliseconds ();
+        this.options['timeDifference'] = parseInt (after - serverTime);
+        return this.options['timeDifference'];
+    }
+
 }
