@@ -65,7 +65,7 @@ module.exports = class btse extends Exchange {
     }
 
     async loadTimeDifference () {
-        const serverTime = await this.spotv2getTime()
+        const serverTime = await this.spotv2GetTime()
         const after = this.milliseconds ();
         this.options['timeDifference'] = parseInt (after - serverTime);
         return this.options['timeDifference'];
