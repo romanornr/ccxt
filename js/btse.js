@@ -4,11 +4,11 @@
 
 const Exchange = require ('./base/Exchange');
 const { TICK_SIZE } = require ('./base/functions/number');
-const { AuthenticationError, ExchangeError, ArgumentsRequired, PermissionDenied, InvalidOrder, OrderNotFound, DDoSProtection, NotSupported, ExchangeNotAvailable, InsufficientFunds } = require ('./base/errors');
+// const { } = require ('./base/errors');
 
 module.exports = class btse extends Exchange {
-    describe() {
-        return this.deepExtend(super.describe(), {
+    describe () {
+        return this.deepExtend (super.describe (), {
             'id': 'btse',
             'name': 'BTSE',
             'countries': ['UAE'],
@@ -32,7 +32,7 @@ module.exports = class btse extends Exchange {
                     'api': 'https://api.btse.com',
                     'spotv2': 'https://api.btse.com/spot/v2',
                     'futuresv1': 'https://api.btse.com/futures/api/v1',
-                    'testnet': 'https://testapi.btse.io'
+                    'testnet': 'https://testapi.btse.io',
                 },
                 'www': 'https://www.btse.com',
                 'doc': [
@@ -49,26 +49,28 @@ module.exports = class btse extends Exchange {
                     ],
                 },
                 'private': {
-                    'get': [
-                    ],
-                    'post': [
-                    ],
+                    'get': [],
+                    'post': [],
                 },
             },
-            'exceptions': {
-            },
+            'exceptions': {},
             'precisionMode': TICK_SIZE,
             'options': {
+                'timeDifference': 0,
                 'fetchTickerQuotes': true,
             },
         });
     }
 
+    nonce () {
+        return this.milliseconds () - this.options['timeDifference'];
+    }
+
     async loadTimeDifference () {
-        const serverTime = await this.spotv2GetTime()
+        const response = await this.spotv2GetTime ();
         const after = this.milliseconds ();
+        const serverTime = parseInt (response['unix_time'] * 1000);
         this.options['timeDifference'] = parseInt (after - serverTime);
         return this.options['timeDifference'];
     }
-
 }
