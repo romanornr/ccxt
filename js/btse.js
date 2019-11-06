@@ -73,4 +73,11 @@ module.exports = class btse extends Exchange {
         this.options['timeDifference'] = parseInt (after - serverTime);
         return this.options['timeDifference'];
     }
+
+
+    sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body = undefined) {
+        const url = this.urls['api'][api] + '/' + path;
+
+        return { 'url': url, 'method': method, 'body': body, 'headers': headers };
+    }
 }
