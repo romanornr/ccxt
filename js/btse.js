@@ -121,6 +121,12 @@ module.exports = class btse extends Exchange {
         }
     }
 
+    async fetchTicker (symbol, params = {}) {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        console.log (market);
+    }
+
     sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body = undefined) {
         const url = this.urls['api'][api] + '/' + path;
         return { 'url': url, 'method': method, 'body': body, 'headers': headers };
