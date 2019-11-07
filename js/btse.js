@@ -84,9 +84,9 @@ module.exports = class btse extends Exchange {
             const quoteId = this.safeString (market, 'quote_currency');
             const base = this.safeCurrencyCode (baseId);
             const quote = this.safeCurrencyCode (quoteId);
-            const id = this.safeString (this.safeStringLower (baseId) + this.safeStringLower (quoteId));
             const active = this.safeValue (market, 'status');
             const symbol = base + '/' + quote;
+            const id = symbol.replace (/-/g, '').toLowerCase ();
             const precision = {
                 'amount': this.safeFloat (market, 8),
                 'price': this.safeFloat (market, 8),
