@@ -84,9 +84,13 @@ module.exports = class btse extends Exchange {
             const quoteId = this.safeString (market, 'quote_currency');
             const base = this.safeCurrencyCode (baseId);
             const quote = this.safeCurrencyCode (quoteId);
-            const id = this.safeStringLower (baseId) + this.safeStringLower (quoteId);
+            const id = this.safeString (this.safeStringLower (baseId) + this.safeStringLower (quoteId));
             const active = this.safeValue (market, 'status');
             const symbol = base + '/' + quote;
+            const precision = {
+                'amount': this.safeFloat (market, 8),
+                'price': this.safeFloat (market, 8),
+            };
             results.push ({
                 'id': id, // needs fix
                 'symbol': symbol,
@@ -95,10 +99,26 @@ module.exports = class btse extends Exchange {
                 'baseId': baseId,
                 'quoteId': quoteId,
                 'active': active,
+                'precision': precision,
                 'info': market,
-            });
+                'limits': {
+                    'amount': {
+                        'min': this.safeFloat (market, 'base_min_size'),
+                        'max': this.safeFloat (market, 'base_max_size'),
+                    },
+                    'price': {
+                        'min': this.safeFloat (market, 'base_min_price'),
+                        'max': this.safeFloat (market, undefined),
+                    },
+                    'cost': {
+                        'min': undefined,
+                        'max': undefined,
+                    },
+                    'spot': true,
+                },
+            })
+            return results;
         }
-        return results;
     }
 
     sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body = undefined) {
