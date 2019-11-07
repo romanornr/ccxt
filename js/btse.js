@@ -46,6 +46,7 @@ module.exports = class btse extends Exchange {
                 'spotv2': {
                     'get': [
                         'time',
+                        'markets',
                     ],
                 },
                 'private': {
@@ -72,6 +73,32 @@ module.exports = class btse extends Exchange {
         const serverTime = parseInt (response['unix_time'] * 1000);
         this.options['timeDifference'] = parseInt (after - serverTime);
         return this.options['timeDifference'];
+    }
+
+    async fetchMarkets (params = {}) {
+        const response = await this.spotv2GetMarkets ();
+        const results = [];
+        for (let i = 0; i < response.length; i++) {
+            const market = response[i]
+            const id = this.safeString (market, 'id');
+            const baseId = this.safeString (market, 'base_currency');
+            const quoteId = this.safeString (market, 'quote_currency');
+            const base = this.safeCurrencyCode (baseId);
+            const quote = this.safeCurrencyCode (quoteId);
+            const active = this.safeValue (market, 'status');
+            const symbol = base + '/' + quote;
+            results.push ({
+                'id': id, // needs fix
+                'symbol': symbol,
+                'base': base,
+                'quote': quote,
+                'baseId': baseId,
+                'quoteId': quoteId,
+                'active': active,
+                'info': market,
+            });
+        }
+        return results;
     }
 
     sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body = undefined) {
