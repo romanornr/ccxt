@@ -80,11 +80,11 @@ module.exports = class btse extends Exchange {
         const results = [];
         for (let i = 0; i < response.length; i++) {
             const market = response[i]
-            const id = this.safeString (market, 'id');
             const baseId = this.safeString (market, 'base_currency');
             const quoteId = this.safeString (market, 'quote_currency');
             const base = this.safeCurrencyCode (baseId);
             const quote = this.safeCurrencyCode (quoteId);
+            const id = this.safeStringLower (baseId) + this.safeStringLower (quoteId);
             const active = this.safeValue (market, 'status');
             const symbol = base + '/' + quote;
             results.push ({
