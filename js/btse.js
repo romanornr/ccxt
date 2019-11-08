@@ -116,9 +116,9 @@ module.exports = class btse extends Exchange {
                     },
                     'spot': true,
                 },
-            })
-            return results;
+            });
         }
+        return results;
     }
 
     async fetchTicker (symbol, params = {}) {
