@@ -48,6 +48,7 @@ module.exports = class btse extends Exchange {
                         'time',
                         'markets',
                         'ticker/{id}/',
+                        'orderbook/{id}',
                     ],
                 },
                 'private': {
@@ -130,6 +131,17 @@ module.exports = class btse extends Exchange {
         };
         const response = await this.spotv2GetTickerId (this.extend (request, params));
         return this.parseTicker (response, market);
+    }
+
+    async fetchOrderBook (symbol, limit = undefined, params = {}) {
+        await this.loadMarkets ();
+        const request = {
+            'id': symbol.replace ('/', '-'),
+        };
+        const response = await this.spotv2GetOrderbookId (this.extend (request, params));
+        const timestamp = this.safeInteger (response, 'timestamp') / 1000;
+
+        console.log (response);
     }
 
     parseTicker (ticker, market = undefined) {
