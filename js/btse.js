@@ -124,18 +124,41 @@ module.exports = class btse extends Exchange {
 
     async fetchTicker (symbol, params = {}) {
         await this.loadMarkets ();
+        const market = this.market (symbol)
         const request = {
-            'id': symbol.replace('/', '-'),
+            'id': symbol.replace ('/', '-'),
         };
-
         const response = await this.spotv2GetTickerId (this.extend (request, params));
-        // return this.parseTicker (response[0], market)
-        console.log (response);
+        return this.parseTicker (response, market);
+    }
+
+    parseTicker (ticker, market = undefined) {
+        const symbol = this.findSymbol (this.safeString (ticker, 'symbol'), market);
+        return {
+            'symbol': symbol,
+            'timestamp': undefined, //fixme
+            'high': undefined,
+            'low': undefined,
+            'bid': this.safeFloat (ticker, 'bid'),
+            'bidVolume': undefined,
+            'ask': this.safeFloat (ticker, 'ask'),
+            'askVolume': undefined,
+            'vwap': undefined,
+            'open': undefined,
+            'close': undefined,
+            'last': this.safeFloat (ticker, 'price'),
+            'previousClose': undefined,
+            'change': undefined,
+            'percentage': undefined,
+            'average': undefined,
+            'baseVolume': undefined,
+            'quoteVolume': this.safeFloat (ticker, 'volume'),
+            'info': ticker,
+        };
     }
 
     sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body = undefined) {
         const url = this.urls['api'][api] + '/' + this.implodeParams (path, params);
-
         return { 'url': url, 'method': method, 'body': body, 'headers': headers };
     }
 }
