@@ -47,6 +47,7 @@ module.exports = class btse extends Exchange {
                     'get': [
                         'time',
                         'markets',
+                        'ticker',
                     ],
                 },
                 'private': {
@@ -124,7 +125,12 @@ module.exports = class btse extends Exchange {
     async fetchTicker (symbol, params = {}) {
         await this.loadMarkets ();
         const market = this.market (symbol);
-        console.log (market);
+        const request = {
+            'symbol': market['baseId'] + market['quoteId'],
+        }
+        const response = await this.spotv2GetTicker (this.extend (request, params));
+        // return this.parseTicker (response[0], market)
+        console.log (response);
     }
 
     sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body = undefined) {
