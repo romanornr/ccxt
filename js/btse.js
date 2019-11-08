@@ -124,17 +124,18 @@ module.exports = class btse extends Exchange {
 
     async fetchTicker (symbol, params = {}) {
         await this.loadMarkets ();
-        const market = this.market (symbol);
         const request = {
-            'id': market['baseId'] + market['quoteId'],
+            'id': symbol.replace('/', '-'),
         };
+
         const response = await this.spotv2GetTickerId (this.extend (request, params));
         // return this.parseTicker (response[0], market)
         console.log (response);
     }
 
     sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body = undefined) {
-        const url = this.urls['api'][api] + '/' + path;
+        const url = this.urls['api'][api] + '/' + this.implodeParams (path, params);
+
         return { 'url': url, 'method': method, 'body': body, 'headers': headers };
     }
 }
