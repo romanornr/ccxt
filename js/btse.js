@@ -139,35 +139,9 @@ module.exports = class btse extends Exchange {
             'id': symbol.replace ('/', '-'),
         };
         const response = await this.spotv2GetOrderbookId (this.extend (request, params));
-        const timestamp = this.safeInteger (response, 'timestamp') / 1000;
-
-        //console.log (response);
-        const results = {
-            'bids': [],
-            'asks': [],
-            'timestamp': timestamp,
-            'nonce': undefined,
-        }
-
-        //const data = this.safeValue (response, 'result', []);
-        const data = response;
-        const buySide = data['buyQuote'];
-        console.log(buySide)
-
-        for (let i = 0; i < buySide.length; i++) {
-            results['bids']['price'] = buySide[i]['price'];
-        }
-        console.log(results);
-
-        // for (let i = 0; i < data.length; i++) {
-        //     console.log(data[0])
-        //     const order = data[i];
-        //     const side = (order['side'] === 'sellQuote') ? 'asks' : 'bids';
-        //     const amount = this.safeFloat (order, 'size');
-        //     const price = this.safeFloat (order, 'price');
-        //     console.log(side);
-        // }
-        //console.log (orderbook)
+        const timestamp = this.safeInteger (response, 'timestamp');
+        const orderbook = this.parseOrderBook (response, timestamp, 'buyQuote', 'sellQuote', 'price', 'size');
+        return orderbook;
     }
 
     parseTicker (ticker, market = undefined) {
