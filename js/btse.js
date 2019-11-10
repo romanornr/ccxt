@@ -157,10 +157,20 @@ module.exports = class btse extends Exchange {
             request['limit'] = 10000;
         }
         const response = await this.spotv2GetTradesId (this.extend (request, params));
-        const result = this.safeValue (response);
+        //const result = this.safeValue (response);
+
+        let result2 = [];
+
+        for (let i = 0; i < response.length; i++) {
+            response[i].timestamp = new Date(response[i].time).getTime();
+           // console.log(response[i]);
+            result2.push(result2, response[i]);
+        }
+        console.log(result2)
+
+        const result3 = this.safeValue(result2)
         // result['timestamp'] // result['time'] should be unix timestamp
-        //console.log(response)
-        return this.parseTrades (result, market, since, limit);
+        return this.parseTrades (result3, market, since, limit);
 
     }
 
