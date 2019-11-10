@@ -16,8 +16,14 @@ const log       = require ('ololog').configure ({ locate: false })
 //     console.log (await btse.fetchTicker(symbol))
 // }) ()
 
+// (async function(){
+//     const btse = new ccxt.btse ();
+//     const symbol = 'XMR/USD';
+//     console.log (await btse.fetchOrderBook(symbol))
+// }) ()
+
 (async function(){
     const btse = new ccxt.btse ();
-    const symbol = 'XMR/USD';
-    console.log (await btse.fetchOrderBook(symbol))
+    const symbol = 'BTC/USD';
+    console.log (await btse.fetchTrades(symbol))
 }) ()
