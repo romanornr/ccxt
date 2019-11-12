@@ -167,24 +167,23 @@ module.exports = class btse extends Exchange {
     }
 
     parseTrade(trade, market) {
-        const timestamp = this.safeValue(trade, 'timestamp');
+        const timestamp = this.safeValue (trade, 'timestamp');
 
         return {
-            'id': this.safeString(trade, 'serial_id'),
+            'id': this.safeString (trade, 'serial_id'),
             'timestamp': timestamp,
             'info': trade,
-            'datetime': this.iso8601(timestamp),
+            'datetime': this.iso8601 (timestamp),
             'symbol': market['symbol'],
-            'type': this.safeString(trade, 'type'),
-            'price': this.safeFloat(trade, 'price'),
-            'amount': this.safeFloat(trade, 'amount'),
+            'type': this.safeString (trade, 'type'),
+            'price': this.safeFloat (trade, 'price'),
+            'amount': this.safeFloat (trade, 'amount'),
 
-            // TODO: Look into these?
-            'takerOrMarker': undefined,
-            'cost': undefined,
-            'fee': undefined,
-            'orderId': undefined,
-            'side': undefined,
+            'takerOrMarker': undefined, // private
+            'cost': undefined, // private
+            'fee': undefined, // private
+            'orderId': undefined, // private
+            'side': this.safeString (trade, 'type'),
         };
     }
 
