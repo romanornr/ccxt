@@ -70,7 +70,7 @@ module.exports = class btse extends Exchange {
     async loadTimeDifference () {
         const response = await this.spotv2GetTime ();
         const after = this.milliseconds ();
-        const serverTime = parseInt (response['unix_time'] * 1000);
+        const serverTime = parseInt (response['epoch'] * 1000);
         this.options['timeDifference'] = parseInt (after - serverTime);
         return this.options['timeDifference'];
     }
@@ -210,7 +210,8 @@ module.exports = class btse extends Exchange {
     }
 
     async fetchBalance (params = {}) {
-        await this.loadMarkets ();
+        await this.loadTimeDifference ()
+        await this.loadMarkets ()
 
         const response = await this.spotv2GetAccount (params);
     }
@@ -236,10 +237,6 @@ module.exports = class btse extends Exchange {
         //body = this.json (params);
 
         return { 'url': url, 'method': method, 'body': body, 'headers': headers };
-    }
-
-    nonce () {
-        return this.milliseconds ();
     }
 
     createSignature(key, nonce, path, body = null) {
