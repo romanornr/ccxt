@@ -50,13 +50,8 @@ module.exports = class btse extends Exchange {
                         'ticker/{id}/',
                         'orderbook/{id}',
                         'trades/{id}',
-                    ],
-                },
-                'spotv2private': {
-                    'get': [
                         'account',
                     ],
-                    'post': [],
                 },
             },
             'exceptions': {},
@@ -217,28 +212,43 @@ module.exports = class btse extends Exchange {
     async fetchBalance (params = {}) {
         await this.loadMarkets ();
 
-        const response = await this.spotv2privateGetAccount (params);
-
-        console.log (response);
+        const response = await this.spotv2GetAccount (params);
     }
 
     sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body = undefined) {
         let url = this.urls['api'][api] + '/' + this.implodeParams (path, params);
-        if (method === 'GET') {
-            if (Object.keys (params).length) {
-                url += '?' + this.urlencode (params);
-            } else {
-                if (api === 'spotv2private') {
-                    console.log ('private api calling....')
-                    body = params['body'];
-                    headers = {
-                        'Accept': 'application/json',
-                    };
-                } else {
-                    //body = this.json (params);
-                }
-            }
+
+        if (Object.keys (params).length) {
+            url += '?' + this.urlencode (params);
         }
+
+        if (api === 'spotv2' && path === 'account') {
+            const signaturePath = this.cleanSignaturePath(url);
+            const nonce = this.nonce();
+            const signature = this.createSignature(this.secret, nonce, signaturePath);
+
+            headers = {
+                'btse-nonce': nonce,
+                'btse-api': this.apiKey,
+                'btse-sign': signature,
+            };
+        }
+        //body = this.json (params);
+
         return { 'url': url, 'method': method, 'body': body, 'headers': headers };
+    }
+
+    nonce () {
+        return this.milliseconds ();
+    }
+
+    createSignature(key, nonce, path, body = null) {
+        const content = body == null ? this.encode(path + nonce) : this.encode(path + nonce + body)
+
+        return this.hmac(content, key)
+    }
+
+    cleanSignaturePath(url) {
+        return url.replace('https://api.btse.com/', '');
     }
 }

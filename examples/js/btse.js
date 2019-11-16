@@ -30,10 +30,12 @@ const log       = require ('ololog').configure ({ locate: false })
 
 (async function() {
     const exchange = new ccxt.btse ({
-        'btse-api': 'MjIyOGU1NDAyOWVkNDI4Njg1ZWVjMzMwY2E1YzZhOTQ=',
-        //'secret': 'M2I5NTMzZGE4MGViNDIy',
-    })
+        'apiKey': 'MjIyOGU1NDAyOWVkNDI4Njg1ZWVjMzMwY2E1YzZhOTQ=',
+        'secret': 'M2I5NTMzZGE4MGViNDIy',
+    });
+
+    await exchange.fetchBalance();
 
     console.log (await exchange.fetchBalance() )
 
-})
+})();
