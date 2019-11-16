@@ -58,6 +58,7 @@ module.exports = class btse extends Exchange {
             'precisionMode': TICK_SIZE,
             'options': {
                 'timeDifference': 0,
+                'adjustTimeDifference': true,
                 'fetchTickerQuotes': true,
             },
         });
@@ -210,10 +211,15 @@ module.exports = class btse extends Exchange {
     }
 
     async fetchBalance (params = {}) {
-        await this.loadTimeDifference ()
+        if (this.options['adjustTimeDifference']) {
+            await this.loadTimeDifference ()
+        }
+
         await this.loadMarkets ()
 
         const response = await this.spotv2GetAccount (params);
+
+        console.debug(response);
     }
 
     sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body = undefined) {
@@ -228,19 +234,16 @@ module.exports = class btse extends Exchange {
             const nonce = this.nonce();
             const signature = this.createSignature(this.secret, nonce, signaturePath);
 
-            headers = {
-                'btse-nonce': nonce,
-                'btse-api': this.apiKey,
-                'btse-sign': signature,
-            };
+            headers['btse-nonce'] = nonce;
+            headers['btse-api'] = this.apiKey;
+            headers['btse-sign'] = signature;
         }
-        //body = this.json (params);
 
         return { 'url': url, 'method': method, 'body': body, 'headers': headers };
     }
 
     createSignature(key, nonce, path, body = null) {
-        const content = body == null ? this.encode(path + nonce) : this.encode(path + nonce + body)
+        const content = body == null ? this.encode('/' + path + nonce) : this.encode('/' + path + nonce + body)
 
         return this.hmac(content, key, 'sha384')
     }
