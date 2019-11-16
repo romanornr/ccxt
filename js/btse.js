@@ -52,8 +52,10 @@ module.exports = class btse extends Exchange {
                         'trades/{id}',
                     ],
                 },
-                'private': {
-                    'get': [],
+                'spotv2private': {
+                    'get': [
+                        'account',
+                    ],
                     'post': [],
                 },
             },
@@ -212,8 +214,31 @@ module.exports = class btse extends Exchange {
         };
     }
 
+    async fetchBalance (params = {}) {
+        await this.loadMarkets ();
+
+        const response = await this.spotv2privateGetAccount (params);
+
+        console.log (response);
+    }
+
     sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body = undefined) {
-        const url = this.urls['api'][api] + '/' + this.implodeParams (path, params);
+        let url = this.urls['api'][api] + '/' + this.implodeParams (path, params);
+        if (method === 'GET') {
+            if (Object.keys (params).length) {
+                url += '?' + this.urlencode (params);
+            } else {
+                if (api === 'spotv2private') {
+                    console.log ('private api calling....')
+                    body = params['body'];
+                    headers = {
+                        'Accept': 'application/json',
+                    };
+                } else {
+                    //body = this.json (params);
+                }
+            }
+        }
         return { 'url': url, 'method': method, 'body': body, 'headers': headers };
     }
 }

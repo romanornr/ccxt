@@ -22,8 +22,18 @@ const log       = require ('ololog').configure ({ locate: false })
 //     console.log (await btse.fetchOrderBook(symbol))
 // }) ()
 
-(async function(){
-    const btse = new ccxt.btse ();
-    const symbol = 'BTC/USD';
-    console.log (await btse.fetchTrades(symbol))
-}) ()
+// (async function(){
+//     const btse = new ccxt.btse ();
+//     const symbol = 'BTC/USD';
+//     console.log (await btse.fetchTrades(symbol))
+// }) ()
+
+(async function() {
+    const exchange = new ccxt.btse ({
+        'btse-api': 'MjIyOGU1NDAyOWVkNDI4Njg1ZWVjMzMwY2E1YzZhOTQ=',
+        //'secret': 'M2I5NTMzZGE4MGViNDIy',
+    })
+
+    console.log (await exchange.fetchBalance() )
+
+})
