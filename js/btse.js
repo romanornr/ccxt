@@ -245,7 +245,7 @@ module.exports = class btse extends Exchange {
     createSignature(key, nonce, path, body = null) {
         const content = body == null ? this.encode(path + nonce) : this.encode(path + nonce + body)
 
-        return this.hmac(content, key)
+        return this.hmac(content, key, 'sha384')
     }
 
     cleanSignaturePath(url) {
