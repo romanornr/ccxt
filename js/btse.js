@@ -53,6 +53,11 @@ module.exports = class btse extends Exchange {
                         'account',
                     ],
                 },
+                'spotv2private': {
+                    'get': [
+                        'account',
+                    ],
+                },
             },
             'exceptions': {},
             'precisionMode': TICK_SIZE,
@@ -214,7 +219,7 @@ module.exports = class btse extends Exchange {
             await this.loadTimeDifference ();
         }
         await this.loadMarkets ();
-        const response = await this.spotv2GetAccount (params);
+        const response = await this.spotv2privateGetAccount (params);
         const result = {
             'info': response,
         };
@@ -235,7 +240,7 @@ module.exports = class btse extends Exchange {
         if (Object.keys (params).length) {
             url += '?' + this.urlencode (params);
         }
-        if (api === 'spotv2' && path === 'account') {
+        if (api === 'spotv2private') {
             const signaturePath = this.cleanSignaturePath (url);
             const nonce = this.nonce ();
             const signature = this.createSignature (this.secret, nonce, signaturePath);
