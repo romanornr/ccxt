@@ -80,7 +80,7 @@ module.exports = class btse extends Exchange {
         const response = await this.spotv2GetMarkets ();
         const results = [];
         for (let i = 0; i < response.length; i++) {
-            const market = response[i]
+            const market = response[i];
             const baseId = this.safeString (market, 'base_currency');
             const quoteId = this.safeString (market, 'quote_currency');
             const base = this.safeCurrencyCode (baseId);
@@ -124,7 +124,7 @@ module.exports = class btse extends Exchange {
 
     async fetchTicker (symbol, params = {}) {
         await this.loadMarkets ();
-        const market = this.market (symbol)
+        const market = this.market (symbol);
         const request = {
             'id': symbol.replace ('/', '-'),
         };
@@ -155,18 +155,17 @@ module.exports = class btse extends Exchange {
             request['limit'] = 10000;
         }
         const response = await this.spotv2GetTradesId (this.extend (request, params));
-        let result2 = [];
+        const result2 = [];
         for (let i = 0; i < response.length; i++) {
-            response[i].timestamp = new Date (response[i].time).getTime ()
+            response[i].timestamp = new Date (response[i].time).getTime ();
             result2.push (response[i]);
         }
-        console.log (result2)
+        console.log (result2);
         return this.parseTrades (result2, market, since, limit);
     }
 
-    parseTrade(trade, market) {
+    parseTrade (trade, market) {
         const timestamp = this.safeValue (trade, 'timestamp');
-
         return {
             'id': this.safeString (trade, 'serial_id'),
             'timestamp': timestamp,
@@ -189,7 +188,7 @@ module.exports = class btse extends Exchange {
         const symbol = this.findSymbol (this.safeString (ticker, 'symbol'), market);
         return {
             'symbol': symbol,
-            'timestamp': undefined, //fixme
+            'timestamp': undefined, // fixme
             'high': undefined,
             'low': undefined,
             'bid': this.safeFloat (ticker, 'bid'),
@@ -212,43 +211,47 @@ module.exports = class btse extends Exchange {
 
     async fetchBalance (params = {}) {
         if (this.options['adjustTimeDifference']) {
-            await this.loadTimeDifference ()
+            await this.loadTimeDifference ();
         }
-
-        await this.loadMarkets ()
-
+        await this.loadMarkets ();
         const response = await this.spotv2GetAccount (params);
-
-        console.debug(response);
+        const result = {
+            'info': response,
+        };
+        for (let i = 0; i < response.length; i++) {
+            const balance = response[i];
+            const currencyId = this.safeString (balance, 'currency');
+            const code = this.safeCurrencyCode (currencyId);
+            const account = this.account ();
+            account['free'] = this.safeFloat (balance, 'available');
+            account['used'] = this.safeFloat (balance, 'total') - this.safeFloat (balance, 'available');
+            result[code] = account;
+        }
+        return this.parseBalance (result);
     }
 
     sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body = undefined) {
         let url = this.urls['api'][api] + '/' + this.implodeParams (path, params);
-
         if (Object.keys (params).length) {
             url += '?' + this.urlencode (params);
         }
-
         if (api === 'spotv2' && path === 'account') {
-            const signaturePath = this.cleanSignaturePath(url);
-            const nonce = this.nonce();
-            const signature = this.createSignature(this.secret, nonce, signaturePath);
-
+            const signaturePath = this.cleanSignaturePath (url);
+            const nonce = this.nonce ();
+            const signature = this.createSignature (this.secret, nonce, signaturePath);
             headers['btse-nonce'] = nonce;
             headers['btse-api'] = this.apiKey;
             headers['btse-sign'] = signature;
         }
-
         return { 'url': url, 'method': method, 'body': body, 'headers': headers };
     }
 
-    createSignature(key, nonce, path, body = null) {
-        const content = body == null ? this.encode('/' + path + nonce) : this.encode('/' + path + nonce + body)
-
-        return this.hmac(content, key, 'sha384')
+    createSignature (key, nonce, path, body = null) {
+        const content = body == null ? this.encode ('/' + path + nonce) : this.encode ('/' + path + nonce + body);
+        return this.hmac (content, key, 'sha384');
     }
 
-    cleanSignaturePath(url) {
-        return url.replace('https://api.btse.com/', '');
+    cleanSignaturePath (url) {
+        return url.replace ('https://api.btse.com/', '');
     }
-}
+};
