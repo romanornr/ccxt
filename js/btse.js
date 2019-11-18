@@ -31,6 +31,7 @@ module.exports = class btse extends Exchange {
                     'web': 'https://www.btse.com',
                     'api': 'https://api.btse.com',
                     'spotv2': 'https://api.btse.com/spot/v2',
+                    'spotv2private': 'https://api.btse.com/spot/v2',
                     'futuresv1': 'https://api.btse.com/futures/api/v1',
                     'testnet': 'https://testapi.btse.io',
                 },
@@ -233,6 +234,29 @@ module.exports = class btse extends Exchange {
             result[code] = account;
         }
         return this.parseBalance (result);
+    }
+
+    async createOrder (symbol, type, side, amount, price = undefined, params = {}) {
+        await this.loadMarkets();
+        const request = {
+            'symbol': this.marketId (symbol),
+            'side': this.capitalize (side),
+            'qty': amount,
+            'order_type': this.capitalize (type),
+        };
+        if (price !== undefined) {
+            request['price'] = price;
+        }
+        let response = undefined;
+        if (('stop_px' in params) && ('base_price' in params)) {
+            response = await this.privatePostStopOrderCreate (this.extend (request, params));
+        } else {
+            response = await this.privatePostOrderCreate (this.extend (request, params));
+        }
+        const order = this.parseOrder (response['result']);
+        const id = this.safeString (order, 'order_id');
+        this.orders[id] = order;
+        return this.extend ({ 'info': response }, order);
     }
 
     sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body = undefined) {
