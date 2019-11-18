@@ -58,6 +58,9 @@ module.exports = class btse extends Exchange {
                     'get': [
                         'account',
                     ],
+                    'post': [
+                        'order',
+                    ],
                 },
             },
             'exceptions': {},
@@ -241,22 +244,19 @@ module.exports = class btse extends Exchange {
         const request = {
             'symbol': this.marketId (symbol),
             'side': this.capitalize (side),
-            'qty': amount,
-            'order_type': this.capitalize (type),
+            'amount': amount,
+            'type': this.capitalize (type),
         };
         if (price !== undefined) {
             request['price'] = price;
         }
         let response = undefined;
-        if (('stop_px' in params) && ('base_price' in params)) {
-            response = await this.privatePostStopOrderCreate (this.extend (request, params));
-        } else {
-            response = await this.privatePostOrderCreate (this.extend (request, params));
-        }
-        const order = this.parseOrder (response['result']);
-        const id = this.safeString (order, 'order_id');
-        this.orders[id] = order;
-        return this.extend ({ 'info': response }, order);
+            response = await this.spotv2privatePostOrder (this.extend (request, params));
+            console.log( response);
+        //const order = this.parseOrder (response['result']);
+        //const id = this.safeString (order, 'order_id');
+        //this.orders[id] = order;
+        //return this.extend ({ 'info': response }, order);
     }
 
     sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body = undefined) {
