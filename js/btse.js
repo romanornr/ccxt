@@ -128,6 +128,9 @@ module.exports = class btse extends Exchange {
                 },
             });
         }
+
+        console.debug(results);
+
         return results;
     }
 
@@ -240,19 +243,21 @@ module.exports = class btse extends Exchange {
     }
 
     async createOrder (symbol, type, side, amount, price = undefined, params = {}) {
-        await this.loadMarkets();
-        const request = {
-            'symbol': this.marketId (symbol),
-            'side': this.capitalize (side),
-            'amount': amount,
-            'type': this.capitalize (type),
-        };
-        if (price !== undefined) {
-            request['price'] = price;
+        if (this.options['adjustTimeDifference']) {
+            await this.loadTimeDifference ();
         }
-        let response = undefined;
-            response = await this.spotv2privatePostOrder (this.extend (request, params));
-            console.log( response);
+        await this.loadMarkets ();
+
+        const request = {
+            'symbol': this.symbol (symbol),
+            'side': side,
+            'amount': amount,
+            'type': type,
+            'price': price,
+        };
+        console.log('request', request);
+
+        let response = await this.spotv2privatePostOrder (this.extend (request, params));
         //const order = this.parseOrder (response['result']);
         //const id = this.safeString (order, 'order_id');
         //this.orders[id] = order;
@@ -261,17 +266,29 @@ module.exports = class btse extends Exchange {
 
     sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body = undefined) {
         let url = this.urls['api'][api] + '/' + this.implodeParams (path, params);
-        if (Object.keys (params).length) {
-            url += '?' + this.urlencode (params);
+        let bodyText = undefined;
+
+        if (method === 'GET') {
+            if (Object.keys (params).length) {
+                url += '?' + this.urlencode (params);
+            }
         }
+
         if (api === 'spotv2private') {
+            bodyText = JSON.stringify(params);
             const signaturePath = this.cleanSignaturePath (url);
             const nonce = this.nonce ();
-            const signature = this.createSignature (this.secret, nonce, signaturePath);
+            const signature = (method === 'GET')
+                ? this.createSignature (this.secret, nonce, signaturePath)
+                : this.createSignature (this.secret, nonce, signaturePath, bodyText);
             headers['btse-nonce'] = nonce;
             headers['btse-api'] = this.apiKey;
             headers['btse-sign'] = signature;
+            headers['Content-Type'] = 'application/json';
         }
+
+        body = (method === 'GET') ? null : bodyText;
+
         return { 'url': url, 'method': method, 'body': body, 'headers': headers };
     }
 
