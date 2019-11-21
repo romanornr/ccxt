@@ -249,7 +249,7 @@ module.exports = class btse extends Exchange {
         await this.loadMarkets ();
 
         const request = {
-            'symbol': this.symbol (symbol),
+            'symbol': this.symbol(symbol).replace('/', '-'),
             'side': side,
             'amount': amount,
             'type': type,
