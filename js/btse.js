@@ -52,6 +52,7 @@ module.exports = class btse extends Exchange {
                         'orderbook/{id}',
                         'trades/{id}',
                         'account',
+                        'ohlcv',
                     ],
                 },
                 'spotv2private': {
@@ -60,6 +61,11 @@ module.exports = class btse extends Exchange {
                     ],
                     'post': [
                         'order',
+                    ],
+                },
+                'futuresv1': {
+                    'get': [
+                        'ohlcv',
                     ],
                 },
             },
@@ -129,7 +135,7 @@ module.exports = class btse extends Exchange {
             });
         }
 
-        console.debug(results);
+        //console.debug(results);
 
         return results;
     }
@@ -241,6 +247,37 @@ module.exports = class btse extends Exchange {
         }
         return this.parseBalance (result);
     }
+
+    async fetchOHLCV (symbol, timeframe = '1h', since = undefined, limit = undefined, params = {}) {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        const request = {
+            'symbol': market['symbol'].replace ('/', '-'),
+            'end': this.seconds (), // TODO fix wait for BTSE to introduce a limit
+            'resolution': 5, // this.timeframes[timeframe], // TODO FIX
+        };
+        if (since === undefined) {
+            request['start'] = this.seconds () - 86400; // default from 24 hours ago
+        } else {
+            request['start'] = this.truncate (since / 1000, 0);
+        }
+        if (limit !== undefined) {
+            request['end'] = limit;
+        }
+        const response = await this.spotv2GetOhlcv (this.extend (request, params));
+        return this.parseOHLCVs (response, market['id'].toUpperCase (), timeframe, since, limit);
+    }
+
+    // parseOHLCV (ohlcv, market = undefined, timeframe = '1m', since = undefined, limit = undefined) {
+    //     return [
+    //         ohlcv[0],
+    //         parseFloat (ohlcv[1]),
+    //         parseFloat (ohlcv[2]),
+    //         parseFloat (ohlcv[3]),
+    //         parseFloat (ohlcv[4]),
+    //         parseFloat (ohlcv[5]),
+    //     ];
+    // }
 
     async createOrder (symbol, type, side, amount, price = undefined, params = {}) {
         if (this.options['adjustTimeDifference']) {
