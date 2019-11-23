@@ -270,7 +270,7 @@ module.exports = class btse extends Exchange {
         const request = {
             'symbol': market['symbol'].replace ('/', '-'),
             'end': this.seconds (), // TODO fix wait for BTSE to introduce a limit
-            'resolution': 5, // this.timeframes[timeframe], // TODO FIX
+            'resolution': this.timeframes[timeframe],
         };
         if (since === undefined) {
             request['start'] = this.seconds () - 86400; // default from 24 hours ago
