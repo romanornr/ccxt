@@ -295,28 +295,42 @@ module.exports = class btse extends Exchange {
     //     ];
     // }
 
+    // TODO figure out
+    parseOrderStatus (status) {
+        const statuses = {
+            'open': 'open',
+            'cancelled': 'canceled',
+            'filled': 'closed',
+        };
+        return this.safeString (statuses, status, status);
+    }
+
+    // TODO figure out
+    parseOrder (order, market = undefined) {
+
+    }
+
     async createOrder (symbol, type, side, amount, price = undefined, params = {}) {
         if (this.options['adjustTimeDifference']) {
             await this.loadTimeDifference ();
         }
         await this.loadMarkets ();
         const market = this.market (symbol);
-
         const request = {
-            'symbol': 'btc-usd', //market['symbol'].replace ('/', '-'),
+            'symbol': market['symbol'].replace ('/', '-'),
             'side': side,
             'amount': amount,
             'type': type,
             'price': price,
             'time_in_force': 'gtc',
         };
-        console.log('request', request);
-
-        let response = await this.spotv2privatePostOrder (this.extend (request, params));
-        //const order = this.parseOrder (response['result']);
-        //const id = this.safeString (order, 'order_id');
-        //this.orders[id] = order;
-        //return this.extend ({ 'info': response }, order);
+        const response = await this.spotv2privatePostOrder (this.extend (request, params));
+        const order = this.safeValue (response, 'id');
+        if (order === undefined) {
+            console.log ('err')
+            return response;
+        }
+        return this.parseOrder (order);
     }
 
     sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body = undefined) {
