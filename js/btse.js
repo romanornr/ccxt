@@ -300,13 +300,15 @@ module.exports = class btse extends Exchange {
             await this.loadTimeDifference ();
         }
         await this.loadMarkets ();
+        const market = this.market (symbol);
 
         const request = {
-            'symbol': this.symbol(symbol).replace('/', '-'),
+            'symbol': 'btc-usd', //market['symbol'].replace ('/', '-'),
             'side': side,
             'amount': amount,
             'type': type,
             'price': price,
+            'time_in_force': 'gtc',
         };
         console.log('request', request);
 
