@@ -16,13 +16,13 @@ module.exports = class btse extends Exchange {
             'rateLimit': 3000,
             'has': {
                 'CORS': true,
-                'editOrder': true,
+                'editOrder': false,
                 'fetchOrder': true,
                 'fetchOrders': false,
                 'fetchOpenOrders': true,
                 'fetchClosedOrders': true,
-                'fetchMyTrades': true,
-                'fetchTickers': false,
+                'fetchMyTrades': false,
+                'fetchTickers': true,
             },
             'timeframes': {
                 '1m': '1',
@@ -73,6 +73,7 @@ module.exports = class btse extends Exchange {
                 },
                 'spotv2private': {
                     'get': [
+                        'pending',
                         'account',
                     ],
                     'post': [
@@ -344,6 +345,20 @@ module.exports = class btse extends Exchange {
         };
         const response = await this.spotv2privatePostDeleteOrder (this.extend (request, params));
         // TODO parseOrder response
+    }
+
+    async fetchOpenOrders (symbol = undefined, since = undefined, limit = undefined, params = {}) {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        const request = {
+            'symbol': market['symbol'].replace ('/', '-'),
+        };
+        const response = await this.spotv2privateGetPending (this.extend (request, params));
+        console.log (response);
+
+        // TODO fix 403 Forbidden
+
+        // TODO parseOrder respose
     }
 
     sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body = undefined) {
