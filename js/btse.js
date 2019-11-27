@@ -77,6 +77,7 @@ module.exports = class btse extends Exchange {
                     ],
                     'post': [
                         'order',
+                        'deleteOrder',
                     ],
                 },
                 'futuresv1': {
@@ -330,7 +331,19 @@ module.exports = class btse extends Exchange {
             console.log ('err')
             return response;
         }
+        console.log (response)
         return this.parseOrder (order);
+    }
+
+    async cancelOrder (id, symbol = undefined, params = {}) {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        const request = {
+            'symbol': market['symbol'].replace ('/', '-'),
+            'order_id': id,
+        };
+        const response = await this.spotv2privatePostDeleteOrder (this.extend (request, params));
+        // TODO parseOrder response
     }
 
     sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body = undefined) {
