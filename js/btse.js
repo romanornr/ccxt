@@ -87,6 +87,14 @@ module.exports = class btse extends Exchange {
                     ],
                 },
             },
+            'fees': {
+                'trading': {
+                    'tierBased': false,
+                    'percentage': true,
+                    'taker': 0.060,
+                    'maker': 0.0,
+                },
+            },
             'exceptions': {},
             'precisionMode': TICK_SIZE,
             'options': {
@@ -348,15 +356,19 @@ module.exports = class btse extends Exchange {
     }
 
     async fetchOpenOrders (symbol = undefined, since = undefined, limit = undefined, params = {}) {
+        if (this.options['adjustTimeDifference']) {
+            await this.loadTimeDifference ();
+        }
         await this.loadMarkets ();
         const market = this.market (symbol);
-        const request = {
-            'symbol': market['symbol'].replace ('/', '-'),
-        };
-        const response = await this.spotv2privateGetPending (this.extend (request, params));
+        // const request = {
+        //     'symbol': market['symbol'].replace ('/', '-'),
+        // };
+        // const response = await this.spotv2privateGetPending (this.extend (request, params));
+        const response = await this.spotv2privateGetPending();
         console.log (response);
 
-        // TODO fix 403 Forbidden
+        // TODO fix 403 giving request
 
         // TODO parseOrder respose
     }
