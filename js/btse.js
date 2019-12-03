@@ -79,6 +79,7 @@ module.exports = class btse extends Exchange {
                     'post': [
                         'order',
                         'deleteOrder',
+                        'fills',
                     ],
                 },
                 'futuresv1': {
@@ -161,8 +162,9 @@ module.exports = class btse extends Exchange {
             });
         }
 
-        //console.debug(results);
+        // console.debug(results);
 
+        // eslint-disable-next-line padding-line-between-statements
         return results;
     }
 
@@ -315,10 +317,10 @@ module.exports = class btse extends Exchange {
         return this.safeString (statuses, status, status);
     }
 
-    // TODO figure out
-    parseOrder (order, market = undefined) {
-
-    }
+    // // TODO figure out
+    // parseOrder (order, market = undefined) {
+    //
+    // }
 
     async createOrder (symbol, type, side, amount, price = undefined, params = {}) {
         if (this.options['adjustTimeDifference']) {
@@ -337,10 +339,10 @@ module.exports = class btse extends Exchange {
         const response = await this.spotv2privatePostOrder (this.extend (request, params));
         const order = this.safeValue (response, 'id');
         if (order === undefined) {
-            console.log ('err')
+            console.log ('err');
             return response;
         }
-        console.log (response)
+        console.log (response);
         return this.parseOrder (order);
     }
 
@@ -351,6 +353,7 @@ module.exports = class btse extends Exchange {
             'symbol': market['symbol'].replace ('/', '-'),
             'order_id': id,
         };
+        // eslint-disable-next-line no-unused-vars
         const response = await this.spotv2privatePostDeleteOrder (this.extend (request, params));
         // TODO parseOrder response
     }
@@ -360,12 +363,12 @@ module.exports = class btse extends Exchange {
             await this.loadTimeDifference ();
         }
         await this.loadMarkets ();
-        const market = this.market (symbol);
+        // const market = this.market (symbol);
         // const request = {
         //     'symbol': market['symbol'].replace ('/', '-'),
         // };
         // const response = await this.spotv2privateGetPending (this.extend (request, params));
-        const response = await this.spotv2privateGetPending();
+        const response = await this.spotv2privateGetPending ();
         console.log (response);
 
         // TODO fix 403 giving request
@@ -373,18 +376,29 @@ module.exports = class btse extends Exchange {
         // TODO parseOrder respose
     }
 
+    async fetchClosedOrders (symbol = undefined, since = undefined, limit = undefined, params = {}) {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        const request = {
+            'symbol': market['symbol'].replace ('/', '-'),
+            'before': since,
+            'limit': limit,
+        };
+        const orders = await this.spotv2privatePostFills (this.extend (request, params));
+        return this.filterBy (orders, 'status', 'closed');
+        // TODO needs double check
+    }
+
     sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body = undefined) {
         let url = this.urls['api'][api] + '/' + this.implodeParams (path, params);
         let bodyText = undefined;
-
         if (method === 'GET') {
             if (Object.keys (params).length) {
                 url += '?' + this.urlencode (params);
             }
         }
-
         if (api === 'spotv2private') {
-            bodyText = JSON.stringify(params);
+            bodyText = JSON.stringify (params);
             const signaturePath = this.cleanSignaturePath (url);
             const nonce = this.nonce ();
             const signature = (method === 'GET')
@@ -395,9 +409,7 @@ module.exports = class btse extends Exchange {
             headers['btse-sign'] = signature;
             headers['Content-Type'] = 'application/json';
         }
-
         body = (method === 'GET') ? null : bodyText;
-
         return { 'url': url, 'method': method, 'body': body, 'headers': headers };
     }
 
