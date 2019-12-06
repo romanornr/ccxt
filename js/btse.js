@@ -150,7 +150,7 @@ module.exports = class btse extends Exchange {
                         'max': this.safeFloat (market, 'base_max_size'),
                     },
                     'price': {
-                        'min': this.safeFloat (market, 'base_min_price'),
+                        'min': this.safeFloat (market, 'quote_min_price'),
                         'max': this.safeFloat (market, undefined),
                     },
                     'cost': {
