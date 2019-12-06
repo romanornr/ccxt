@@ -84,6 +84,7 @@ module.exports = class btse extends Exchange {
                 },
                 'futuresv1': {
                     'get': [
+                        'time',
                         'ohlcv',
                     ],
                 },
@@ -111,7 +112,10 @@ module.exports = class btse extends Exchange {
     }
 
     async loadTimeDifference () {
-        const response = await this.spotv2GetTime ();
+        const type = this.safeString2 (this.options, 'fetchTime', 'defaultType', 'spot');
+        const method = (type === 'spot') ? 'spotv2GetTime' : 'futuresv1GetTime';
+        // eslint-disable-next-line no-undef
+        const response = await this[method] (params);
         const after = this.milliseconds ();
         const serverTime = parseInt (response['epoch'] * 1000);
         this.options['timeDifference'] = parseInt (after - serverTime);
