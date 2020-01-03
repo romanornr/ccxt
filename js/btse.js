@@ -46,9 +46,9 @@ module.exports = class btse extends Exchange {
                 'api': {
                     'web': 'https://www.btse.com',
                     'api': 'https://api.btse.com',
-                    'spotv2': 'https://api.btse.com/spot/v2',
-                    'spotv2private': 'https://api.btse.com/spot/v2',
-                    'futuresv1': 'https://api.btse.com/futures/api/v1',
+                    'spotv3': 'https://testapi.btse.io/spot/v3',
+                    'spotv3private': 'https://testapi.btse.io/spot/v3',
+                    'futuresv2': 'https://testapi.btse.io/futures/api/v2',
                     'testnet': 'https://testapi.btse.io',
                 },
                 'www': 'https://www.btse.com',
@@ -60,10 +60,10 @@ module.exports = class btse extends Exchange {
                 'referral': 'https://www.btse.com/ref?c=0Ze7BK',
             },
             'api': {
-                'spotv2': {
+                'spotv3': {
                     'get': [
                         'time',
-                        'markets',
+                        'market_summary',
                         'ticker/{id}/',
                         'orderbook/{id}',
                         'trades/{id}',
@@ -82,9 +82,10 @@ module.exports = class btse extends Exchange {
                         'fills',
                     ],
                 },
-                'futuresv1': {
+                'futuresv2': {
                     'get': [
                         'time',
+                        'market_summary',
                         'ohlcv',
                     ],
                 },
@@ -123,20 +124,25 @@ module.exports = class btse extends Exchange {
     }
 
     async fetchMarkets (params = {}) {
-        const response = await this.spotv2GetMarkets ();
+        //const response = await this.futuresv2GetMarketSummary ();
+        const type = this.safeString2 (this.options, 'GetMarketSummary', 'defaultType', 'spot');
+        const method = (type === 'futures') ? 'spotv3GetMarketSummary' : 'futuresv2GetMarketSummary';
+        const response = await this[method] (params);
         const results = [];
         for (let i = 0; i < response.length; i++) {
             const market = response[i];
-            const baseId = this.safeString (market, 'base_currency');
-            const quoteId = this.safeString (market, 'quote_currency');
+            const baseId = this.safeString (market, 'base');
+            const quoteId = this.safeString (market, 'quote');
             const base = this.safeCurrencyCode (baseId);
             const quote = this.safeCurrencyCode (quoteId);
-            const active = this.safeValue (market, 'status');
-            const symbol = base + '/' + quote;
+            const active = this.safeValue (market, 'active');
+            const symbol = this.safeString (market, 'symbol'); // base + '/' + quote;
             const id = this.safeValue (market, 'symbol').replace (/-/g, '').toLowerCase ();
+            const sizeIncrement = this.safeFloat (market, 'minSizeIncrement');
+            const priceIncrement = this.safeFloat (market, 'minPriceIncrement');
             const precision = {
-                'amount': 8,
-                'price': 8,
+                'amount': sizeIncrement,
+                'price': priceIncrement,
             };
             results.push ({
                 'id': id, // needs fix
@@ -150,25 +156,21 @@ module.exports = class btse extends Exchange {
                 'info': market,
                 'limits': {
                     'amount': {
-                        'min': this.safeFloat (market, 'base_min_size'),
-                        'max': this.safeFloat (market, 'base_max_size'),
+                        'min': sizeIncrement,
+                        'max': undefined,
                     },
                     'price': {
-                        'min': this.safeFloat (market, 'quote_min_price'),
-                        'max': this.safeFloat (market, undefined),
+                        'min': priceIncrement,
+                        'max': undefined,
                     },
                     'cost': {
                         'min': undefined,
                         'max': undefined,
                     },
-                    'spot': true,
+                    // 'spot': true,
                 },
             });
         }
-
-        // console.debug(results);
-
-        // eslint-disable-next-line padding-line-between-statements
         return results;
     }
 
