@@ -9,7 +9,7 @@ const aheadWindow = 1000
 
 async function test () {
     const localStartTime = Date.now ()
-    const serverTime = parseInt((await btse.spotv2GetTime ()).epoch) * 1000;
+    const serverTime = parseInt((await btse.spotv3GetTime ()).epoch) * 1000;
     const localFinishTime = Date.now ()
     const estimatedLandingTime = (localFinishTime + localStartTime) / 2
 

@@ -46,9 +46,9 @@ module.exports = class btse extends Exchange {
                 'api': {
                     'web': 'https://www.btse.com',
                     'api': 'https://api.btse.com',
-                    'spotv3': 'https://testapi.btse.io/spot/v3',
+                    'spotv3': 'https://api.btse.com/spot/api/v3',
                     'spotv3private': 'https://testapi.btse.io/spot/v3',
-                    'futuresv2': 'https://testapi.btse.io/futures/api/v2',
+                    'futuresv3': 'https://api.btse.com/futures',
                     'testnet': 'https://testapi.btse.io',
                 },
                 'www': 'https://www.btse.com',
