@@ -46,9 +46,10 @@ module.exports = class btse extends Exchange {
                 'api': {
                     'web': 'https://www.btse.com',
                     'api': 'https://api.btse.com',
+                    'spotv2': 'https://api.btse.com/spot/api/v2',
                     'spotv3': 'https://api.btse.com/spot/api/v3',
                     'spotv3private': 'https://testapi.btse.io/spot/v3',
-                    'futuresv3': 'https://api.btse.com/futures',
+                    'futuresv2': 'https://api.btse.com/futures/api/v2',
                     'testnet': 'https://testapi.btse.io',
                 },
                 'www': 'https://www.btse.com',
@@ -60,6 +61,17 @@ module.exports = class btse extends Exchange {
                 'referral': 'https://www.btse.com/ref?c=0Ze7BK',
             },
             'api': {
+                'spotv2': {
+                    'get': [
+                        'time',
+                        'market_summary',
+                        'ticker/{id}/',
+                        'orderbook/{id}',
+                        'trades/{id}',
+                        'account',
+                        'ohlcv',
+                    ],
+                },
                 'spotv3': {
                     'get': [
                         'time',
@@ -126,7 +138,7 @@ module.exports = class btse extends Exchange {
     async fetchMarkets (params = {}) {
         //const response = await this.futuresv2GetMarketSummary ();
         const type = this.safeString2 (this.options, 'GetMarketSummary', 'defaultType', 'spot');
-        const method = (type === 'futures') ? 'spotv3GetMarketSummary' : 'futuresv2GetMarketSummary';
+        const method = (type === 'spot') ? 'spotv3GetMarketSummary' : 'futuresv2GetMarketSummary';
         const response = await this[method] (params);
         const results = [];
         for (let i = 0; i < response.length; i++) {
@@ -176,11 +188,14 @@ module.exports = class btse extends Exchange {
 
     async fetchTicker (symbol, params = {}) {
         await this.loadMarkets ();
+        const type = this.safeString2 (this.options, 'GetTickerId', 'defaultType', 'spot');
+        const method = (type === 'spot') ? 'spotv2GetTickerId' : 'futuresv2GetTickerId';
         const market = this.market (symbol);
         const request = {
             'id': symbol.replace ('/', '-'),
         };
         const response = await this.spotv2GetTickerId (this.extend (request, params));
+        //const response = await this[method] (request, params);
         return this.parseTicker (response, market);
     }
 
