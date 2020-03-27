@@ -191,17 +191,13 @@ module.exports = class btse extends Exchange {
 
     async fetchTicker (symbol, params = {}) {
         await this.loadMarkets ();
-        const type = this.safeString2 (this.options, 'GetMarketSummary', 'defaultType', 'spot');
-        const method = (type === 'futures') ? 'spotv3GetMarketSummary' : 'futuresv2MarketSummary';
-        const market = this.market (symbol);
-        console.log(symbol)
+        const market = this.market (symbol)
+        const method = market['spot'] ? 'spotv3GetMarketSummary' : 'futuresv2GetMarketSummary';
         const request = {
             'symbol': symbol,
         };
-        //const response = await this.spotv3GetMarketSummary (this.extend (request, params));
-        const response = await this.futuresv2GetMarketSummary (this.extend (request, params));
-        //const response = await this[method] (request, params); // this needs to be fixed. It uses the spot api when using futures
-        return this.parseTicker (response, market);
+        const response = await this[method] (this.extend (request, params));
+        return response;
     }
 
     async fetchOrderBook (symbol, limit = undefined, params = {}) {
