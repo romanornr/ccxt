@@ -197,18 +197,45 @@ module.exports = class btse extends Exchange {
             'symbol': symbol,
         };
         const response = await this[method] (this.extend (request, params));
-        return response;
+        return this.parseTicker (response, symbol);
+    }
+
+    // TODO this def needs a fix
+    parseTicker (ticker, market = undefined) {
+        const symbol = this.safeString (ticker, 'symbol');
+        return {
+            'symbol': market,
+            'timestamp': undefined, // fixme
+            'high': this.safeFloat2 (ticker, 'high24Hr'),
+            'low': undefined,
+            'bid': this.safeFloat (ticker, 'bid'),
+            'bidVolume': undefined,
+            'ask': this.safeFloat (ticker, 'ask'),
+            'askVolume': undefined,
+            'vwap': undefined,
+            'open': undefined,
+            'close': undefined,
+            'last': this.safeFloat (ticker, 'price'),
+            'previousClose': undefined,
+            'change': undefined,
+            'percentage': this.safeFloat (ticker, 'percentageChange'),
+            'average': undefined,
+            'baseVolume': undefined,
+            'quoteVolume': this.safeFloat (ticker, 'volume'),
+            'info': ticker,
+        };
     }
 
     async fetchOrderBook (symbol, limit = undefined, params = {}) {
         await this.loadMarkets ();
-        const market = this.market (symbol)
+        const market = this.market (symbol);
         const method = market['spot'] ? 'spotv3GetMarketSummary' : 'futuresv2GetMarketSummary';
         const request = {
             'symbol': symbol,
         };
         const response = await this[method] (this.extend (request, params));
-        return response;
+        return this.parseTickers (response, symbol);
+        // return response;
     }
 
     async fetchTrades (symbol, since = undefined, limit = undefined, params = {}) {
@@ -249,31 +276,6 @@ module.exports = class btse extends Exchange {
             'fee': undefined, // private
             'orderId': undefined, // private
             'side': this.safeString (trade, 'type'),
-        };
-    }
-
-    parseTicker (ticker, market = undefined) {
-        const symbol = this.findSymbol (this.safeString (ticker, 'symbol'), market);
-        return {
-            'symbol': symbol,
-            'timestamp': undefined, // fixme
-            'high': undefined,
-            'low': undefined,
-            'bid': this.safeFloat (ticker, 'bid'),
-            'bidVolume': undefined,
-            'ask': this.safeFloat (ticker, 'ask'),
-            'askVolume': undefined,
-            'vwap': undefined,
-            'open': undefined,
-            'close': undefined,
-            'last': this.safeFloat (ticker, 'price'),
-            'previousClose': undefined,
-            'change': undefined,
-            'percentage': undefined,
-            'average': undefined,
-            'baseVolume': undefined,
-            'quoteVolume': this.safeFloat (ticker, 'volume'),
-            'info': ticker,
         };
     }
 
