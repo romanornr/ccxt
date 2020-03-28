@@ -191,8 +191,8 @@ module.exports = class btse extends Exchange {
 
     async fetchTicker (symbol, params = {}) {
         await this.loadMarkets ();
-        const market = this.market (symbol)
-        const method = market['spot'] ? 'spotv3GetMarketSummary' : 'futuresv2GetMarketSummary';
+        const type = this.safeString2 (this.options, 'GetMarketSummary', 'defaultType', 'spot');
+        const method = (type === 'futures') ? 'spotv3GetMarketSummary' : 'futuresv2GetMarketSummary';
         const request = {
             'symbol': symbol,
         };
@@ -202,18 +202,13 @@ module.exports = class btse extends Exchange {
 
     async fetchOrderBook (symbol, limit = undefined, params = {}) {
         await this.loadMarkets ();
-
-        const type = this.safeString2 (this.options, 'GetOrderbookId', 'defaultType', 'spot');
-        const method = (type === 'spot') ? 'spotv3GetOrderbookId' : 'futuresv2GetOrderbookId';
-
+        const market = this.market (symbol)
+        const method = market['spot'] ? 'spotv3GetMarketSummary' : 'futuresv2GetMarketSummary';
         const request = {
-            'id': symbol.replace ('/', '-'),
+            'symbol': symbol,
         };
-        const response = await this[method] (request, params);
-        //const response = await this.spotv2GetOrderbookId (this.extend (request, params));
-        const timestamp = this.safeInteger (response, 'timestamp');
-        const orderbook = this.parseOrderBook (response, timestamp, 'buyQuote', 'sellQuote', 'price', 'size');
-        return orderbook;
+        const response = await this[method] (this.extend (request, params));
+        return response;
     }
 
     async fetchTrades (symbol, since = undefined, limit = undefined, params = {}) {

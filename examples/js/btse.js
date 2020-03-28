@@ -13,6 +13,7 @@ const log       = require ('ololog').configure ({ locate: false })
 (async function(){
     const btse = new ccxt.btse ();
     const symbol = 'ETHPFC';
+    //const symbol = 'BTC-USD';
     console.log (await btse.fetchTicker(symbol))
 }) ()
 
