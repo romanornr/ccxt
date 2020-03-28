@@ -63,6 +63,7 @@ class southxchange(Exchange):
             'commonCurrencies': {
                 'SMT': 'SmartNode',
                 'MTC': 'Marinecoin',
+                'BHD': 'Bithold',
             },
         })
 
@@ -76,7 +77,7 @@ class southxchange(Exchange):
             base = self.safe_currency_code(baseId)
             quote = self.safe_currency_code(quoteId)
             symbol = base + '/' + quote
-            id = symbol
+            id = baseId + '/' + quoteId
             result.append({
                 'id': id,
                 'symbol': symbol,
@@ -228,6 +229,7 @@ class southxchange(Exchange):
         result = {
             'info': order,
             'id': id,
+            'clientOrderId': None,
             'timestamp': timestamp,
             'datetime': self.iso8601(timestamp),
             'lastTradeTimestamp': None,

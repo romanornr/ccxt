@@ -61,6 +61,7 @@ module.exports = class southxchange extends Exchange {
             'commonCurrencies': {
                 'SMT': 'SmartNode',
                 'MTC': 'Marinecoin',
+                'BHD': 'Bithold',
             },
         });
     }
@@ -75,7 +76,7 @@ module.exports = class southxchange extends Exchange {
             const base = this.safeCurrencyCode (baseId);
             const quote = this.safeCurrencyCode (quoteId);
             const symbol = base + '/' + quote;
-            const id = symbol;
+            const id = baseId + '/' + quoteId;
             result.push ({
                 'id': id,
                 'symbol': symbol,
@@ -245,6 +246,7 @@ module.exports = class southxchange extends Exchange {
         const result = {
             'info': order,
             'id': id,
+            'clientOrderId': undefined,
             'timestamp': timestamp,
             'datetime': this.iso8601 (timestamp),
             'lastTradeTimestamp': undefined,

@@ -283,7 +283,7 @@ class ice3x(Exchange):
     def parse_order(self, order, market=None):
         pairId = self.safe_integer(order, 'pair_id')
         symbol = None
-        if pairId and not market and (pairId in list(self.marketsById.keys())):
+        if pairId and not market and (pairId in self.marketsById):
             market = self.marketsById[pairId]
             symbol = market['symbol']
         timestamp = self.safe_timestamp(order, 'created')
@@ -308,6 +308,7 @@ class ice3x(Exchange):
                 fee['currency'] = market['quote']
         return {
             'id': self.safe_string(order, 'order_id'),
+            'clientOrderId': None,
             'datetime': self.iso8601(timestamp),
             'timestamp': timestamp,
             'lastTradeTimestamp': None,

@@ -56,7 +56,7 @@ class digifinex(Exchange):
                 'doc': [
                     'https://docs.digifinex.vip',
                 ],
-                'fees': 'https://digifinex.zendesk.com/hc/en-us/articles/360000328482-Fee-Structure-on-DigiFinex',
+                'fees': 'https://digifinex.zendesk.com/hc/en-us/articles/360000328422-Fee-Structure-on-DigiFinex',
                 'referral': 'https://www.digifinex.vip/en-ww/from/DhOzBg/3798****5114',
             },
             'api': {
@@ -113,6 +113,14 @@ class digifinex(Exchange):
                     ],
                 },
             },
+            'fees': {
+                'trading': {
+                    'tierBased': False,
+                    'percentage': True,
+                    'maker': 0.002,
+                    'taker': 0.002,
+                },
+            },
             'exceptions': {
                 'exact': {
                     '10001': [BadRequest, "Wrong request method, please check it's a GET ot POST request"],
@@ -148,6 +156,9 @@ class digifinex(Exchange):
             'options': {
                 'defaultType': 'spot',
                 'types': ['spot', 'margin', 'otc'],
+            },
+            'commonCurrencies': {
+                'BHT': 'Black House Test',
             },
         })
 
@@ -804,6 +815,7 @@ class digifinex(Exchange):
         return {
             'info': order,
             'id': id,
+            'clientOrderId': None,
             'timestamp': timestamp,
             'datetime': self.iso8601(timestamp),
             'lastTradeTimestamp': lastTradeTimestamp,
@@ -903,6 +915,9 @@ class digifinex(Exchange):
         orderType = self.safe_string(params, 'type', defaultType)
         params = self.omit(params, 'type')
         await self.load_markets()
+        market = None
+        if symbol is not None:
+            market = self.market(symbol)
         request = {
             'market': orderType,
             'order_id': id,
@@ -929,7 +944,8 @@ class digifinex(Exchange):
         #         ]
         #     }
         #
-        return self.parse_order(response)
+        data = self.safe_value(response, 'data', {})
+        return self.parse_order(data, market)
 
     async def fetch_my_trades(self, symbol=None, since=None, limit=None, params={}):
         defaultType = self.safe_string(self.options, 'defaultType', 'spot')

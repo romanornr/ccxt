@@ -549,6 +549,7 @@ class stronghold(Exchange):
                 cost = amount * price
         return {
             'id': id,
+            'clientOrderId': None,
             'info': order,
             'symbol': symbol,
             'datetime': datetime,
@@ -580,7 +581,7 @@ class stronghold(Exchange):
             'venueId': self.options['venueId'],
             'accountId': await self.get_active_account(),
         }, params)
-        if not ('accountId' in list(request.keys())):
+        if not ('accountId' in request):
             raise ArgumentsRequired(self.id + " fetchBalance requires either the 'accountId' extra parameter or exchange.options['accountId'] = 'YOUR_ACCOUNT_ID'.")
         response = await self.privateGetVenuesVenueIdAccountsAccountId(request)
         balances = self.safe_value(response['result'], 'balances')
@@ -619,7 +620,7 @@ class stronghold(Exchange):
         request = self.extend({
             'venueId': self.options['venueId'],
             'accountId': await self.get_active_account(),
-            'assetId': self.currencyId(code),
+            'assetId': self.currency_id(code),
             'paymentMethod': paymentMethod,
         }, params)
         if not request['accountId']:
@@ -654,7 +655,7 @@ class stronghold(Exchange):
         request = self.extend({
             'venueId': self.options['venueId'],
             'accountId': await self.get_active_account(),
-            'assetId': self.currencyId(code),
+            'assetId': self.currency_id(code),
             'amount': amount,
             'paymentMethod': paymentMethod,
             'paymentMethodDetails': {

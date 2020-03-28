@@ -534,6 +534,7 @@ module.exports = class cobinhood extends Exchange {
         }
         return {
             'id': this.safeString (order, 'id'),
+            'clientOrderId': undefined,
             'datetime': this.iso8601 (timestamp),
             'timestamp': timestamp,
             'lastTradeTimestamp': undefined,
@@ -851,10 +852,7 @@ module.exports = class cobinhood extends Exchange {
                 }
             }
         }
-        const exceptions = this.exceptions;
-        if (errorCode in exceptions) {
-            throw new exceptions[errorCode] (feedback);
-        }
+        this.throwExactlyMatchedException (this.exceptions, errorCode, feedback);
         throw new ExchangeError (feedback);
     }
 

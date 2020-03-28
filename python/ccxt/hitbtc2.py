@@ -7,11 +7,14 @@ from ccxt.hitbtc import hitbtc
 import base64
 import math
 from ccxt.base.errors import ExchangeError
+from ccxt.base.errors import AuthenticationError
 from ccxt.base.errors import PermissionDenied
+from ccxt.base.errors import BadSymbol
 from ccxt.base.errors import InsufficientFunds
 from ccxt.base.errors import InvalidOrder
 from ccxt.base.errors import OrderNotFound
 from ccxt.base.errors import ExchangeNotAvailable
+from ccxt.base.errors import RequestTimeout
 from ccxt.base.decimal_to_precision import TRUNCATE
 from ccxt.base.decimal_to_precision import DECIMAL_PLACES
 
@@ -28,7 +31,7 @@ class hitbtc2(hitbtc):
             'has': {
                 'createDepositAddress': True,
                 'fetchDepositAddress': True,
-                'CORS': True,
+                'CORS': False,
                 'editOrder': True,
                 'fetchCurrencies': True,
                 'fetchOHLCV': True,
@@ -59,7 +62,10 @@ class hitbtc2(hitbtc):
             },
             'urls': {
                 'logo': 'https://user-images.githubusercontent.com/1294454/27766555-8eaec20e-5edc-11e7-9c5b-6dc69fc42f5e.jpg',
-                'api': 'https://api.hitbtc.com',
+                'api': {
+                    'public': 'https://api.hitbtc.com',
+                    'private': 'https://api.hitbtc.com',
+                },
                 'www': 'https://hitbtc.com',
                 'referral': 'https://hitbtc.com/?ref_id=5a5d39a65d466',
                 'doc': [
@@ -553,8 +559,11 @@ class hitbtc2(hitbtc):
                 'defaultTimeInForce': 'FOK',
             },
             'exceptions': {
+                '504': RequestTimeout,  # {"error":{"code":504,"message":"Gateway Timeout"}}
+                '1002': AuthenticationError,  # {"error":{"code":1002,"message":"Authorization failed","description":""}}
                 '1003': PermissionDenied,  # "Action is forbidden for self API key"
                 '2010': InvalidOrder,  # "Quantity not a valid number"
+                '2001': BadSymbol,  # "Symbol not found"
                 '2011': InvalidOrder,  # "Quantity too low"
                 '2020': InvalidOrder,  # "Price not a valid number"
                 '20002': OrderNotFound,  # canceling non-existent order
@@ -634,7 +643,7 @@ class hitbtc2(hitbtc):
                 if currency['disabled']:
                     active = False
             type = 'fiat'
-            if ('crypto' in list(currency.keys())) and currency['crypto']:
+            if ('crypto' in currency) and currency['crypto']:
                 type = 'crypto'
             name = self.safe_string(currency, 'fullName')
             result[code] = {
@@ -1122,6 +1131,7 @@ class hitbtc2(hitbtc):
         # because most of their endpoints will require clientOrderId
         # explained here: https://github.com/ccxt/ccxt/issues/5674
         id = self.safe_string(order, 'clientOrderId')
+        clientOrderId = id
         price = self.safe_float(order, 'price')
         if price is None:
             if id in self.orders:
@@ -1164,6 +1174,7 @@ class hitbtc2(hitbtc):
                 }
         return {
             'id': id,
+            'clientOrderId': clientOrderId,  # https://github.com/ccxt/ccxt/issues/5674
             'timestamp': created,
             'datetime': self.iso8601(created),
             'lastTradeTimestamp': updated,
@@ -1375,7 +1386,7 @@ class hitbtc2(hitbtc):
                 'Authorization': 'Basic ' + self.decode(auth),
                 'Content-Type': 'application/json',
             }
-        url = self.urls['api'] + url
+        url = self.urls['api'][api] + url
         return {'url': url, 'method': method, 'body': body, 'headers': headers}
 
     def handle_errors(self, code, reason, url, method, headers, body, response, requestHeaders, requestBody):
@@ -1393,10 +1404,8 @@ class hitbtc2(hitbtc):
             # {"error":{"code":20002,"message":"Order not found","description":""}}
             if body[0] == '{':
                 if 'error' in response:
-                    code = self.safe_string(response['error'], 'code')
-                    exceptions = self.exceptions
-                    if code in exceptions:
-                        raise exceptions[code](feedback)
+                    errorCode = self.safe_string(response['error'], 'code')
+                    self.throw_exactly_matched_exception(self.exceptions, errorCode, feedback)
                     message = self.safe_string(response['error'], 'message')
                     if message == 'Duplicate clientOrderId':
                         raise InvalidOrder(feedback)

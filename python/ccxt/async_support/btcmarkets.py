@@ -12,6 +12,7 @@ from ccxt.base.errors import ArgumentsRequired
 from ccxt.base.errors import InvalidOrder
 from ccxt.base.errors import OrderNotFound
 from ccxt.base.errors import DDoSProtection
+from ccxt.base.decimal_to_precision import ROUND
 
 
 class btcmarkets(Exchange):
@@ -397,7 +398,7 @@ class btcmarkets(Exchange):
         return self.parse_ticker(response, market)
 
     def parse_trade(self, trade, market=None):
-        timestamp = self.safe_timestamp(trade, 'timestamp')
+        timestamp = self.safe_timestamp(trade, 'date')
         symbol = None
         if market is not None:
             symbol = market['symbol']
@@ -444,8 +445,8 @@ class btcmarkets(Exchange):
         })
         request['currency'] = market['quote']
         request['instrument'] = market['base']
-        request['price'] = int(price * multiplier)
-        request['volume'] = int(amount * multiplier)
+        request['price'] = int(self.decimal_to_precision(price * multiplier, ROUND, 0))
+        request['volume'] = int(self.decimal_to_precision(amount * multiplier, ROUND, 0))
         request['orderSide'] = orderSide
         request['ordertype'] = self.capitalize(type)
         request['clientRequestId'] = str(self.nonce())
@@ -568,9 +569,11 @@ class btcmarkets(Exchange):
                 average = cost / filled
             lastTradeTimestamp = trades[numTrades - 1]['timestamp']
         id = self.safe_string(order, 'id')
+        clientOrderId = self.safe_string(order, 'clientRequestId')
         return {
             'info': order,
             'id': id,
+            'clientOrderId': clientOrderId,
             'timestamp': timestamp,
             'datetime': self.iso8601(timestamp),
             'lastTradeTimestamp': lastTradeTimestamp,
@@ -684,9 +687,6 @@ class btcmarkets(Exchange):
         if 'success' in response:
             if not response['success']:
                 error = self.safe_string(response, 'errorCode')
-                message = self.id + ' ' + self.json(response)
-                if error in self.exceptions:
-                    ExceptionClass = self.exceptions[error]
-                    raise ExceptionClass(message)
-                else:
-                    raise ExchangeError(message)
+                feedback = self.id + ' ' + body
+                self.throw_exactly_matched_exception(self.exceptions, error, feedback)
+                raise ExchangeError(feedback)
