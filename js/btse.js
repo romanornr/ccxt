@@ -204,25 +204,25 @@ module.exports = class btse extends Exchange {
     parseTicker (ticker, market = undefined) {
         const symbol = this.safeString (ticker, 'symbol');
         return {
-            'symbol': market,
+            'symbol': ticker[0]['symbol'],
             'timestamp': undefined, // fixme
-            'high': this.safeFloat2 (ticker, 'high24Hr'),
+            'high': this.safeFloat2 (ticker[0], 'high24Hr'),
             'low': undefined,
-            'bid': this.safeFloat (ticker, 'bid'),
+            'bid': this.safeFloat (ticker[0], 'highestBid'),
             'bidVolume': undefined,
-            'ask': this.safeFloat (ticker, 'ask'),
+            'ask': this.safeFloat (ticker[0], 'lowestAsk:'),
             'askVolume': undefined,
             'vwap': undefined,
             'open': undefined,
             'close': undefined,
-            'last': this.safeFloat (ticker, 'price'),
+            'last': this.safeFloat (ticker[0], 'price'),
             'previousClose': undefined,
             'change': undefined,
-            'percentage': this.safeFloat (ticker, 'percentageChange'),
+            'percentage': this.safeFloat (ticker[0], 'percentageChange'),
             'average': undefined,
             'baseVolume': undefined,
-            'quoteVolume': this.safeFloat (ticker, 'volume'),
-            'info': ticker,
+            'quoteVolume': this.safeFloat (ticker[0], 'volume'),
+            'info': ticker[0],
         };
     }
 
