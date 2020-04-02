@@ -138,14 +138,17 @@ module.exports = class btse extends Exchange {
     }
 
     async fetchMarkets (params = {}) {
-        const defaultType = this.safeString2 (this.options, 'GetMarketSummary', 'defaultType', 'spot');
+        const defaultType = this.safeString2 (this.options, 'GetMarketSummary', 'defaultType', 'futures');
         const type = this.safeString (params, 'type', defaultType);
         const query = this.omit (params, 'type');
-        const method = (type === 'spot') ? 'spotv3GetMarketSummary' : 'futuresv2GetMarketSummary';
+        const method = (type === 'futures') ? 'spotv3GetMarketSummary' : 'futuresv2GetMarketSummary';
         const response = await this[method] (query);
         const results = [];
         for (let i = 0; i < response.length; i++) {
             const market = response[i];
+            const future = ('futures' in market);
+            const spot = future;
+            const marketType = spot ? 'spot' : 'future';
             const baseId = this.safeString (market, 'base');
             const quoteId = this.safeString (market, 'quote');
             const base = this.safeCurrencyCode (baseId);
@@ -169,6 +172,7 @@ module.exports = class btse extends Exchange {
                 'active': active,
                 'precision': precision,
                 'info': market,
+                'type': marketType,
                 'limits': {
                     'amount': {
                         'min': sizeIncrement,
@@ -304,8 +308,8 @@ module.exports = class btse extends Exchange {
         await this.loadMarkets ();
         const market = this.market (symbol);
         const request = {
-            'symbol': market['symbol'].replace ('/', '-'),
-            'end': this.seconds (), // TODO fix wait for BTSE to introduce a limit
+            'symbol': symbol,
+            'end': this.seconds (),
             'resolution': this.timeframes[timeframe],
         };
         if (since === undefined) {
@@ -316,6 +320,8 @@ module.exports = class btse extends Exchange {
         if (limit !== undefined) {
             request['end'] = limit;
         }
+        //const method = market['spot'] ? 'spotv3GetOhlcv' : 'futuresv2GetGetOhlcv';
+        //const response = await this[method] (this.extend (request, params));
         const response = await this.spotv3GetOhlcv (this.extend (request, params));
         return this.parseOHLCVs (response, market['id'].toUpperCase (), timeframe, since, limit);
     }
@@ -434,6 +440,7 @@ module.exports = class btse extends Exchange {
             headers['Content-Type'] = 'application/json';
         }
         body = (method === 'GET') ? null : bodyText;
+        // console.log (url)
         return { 'url': url, 'method': method, 'body': body, 'headers': headers };
     }
 

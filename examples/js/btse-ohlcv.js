@@ -14,7 +14,7 @@ require ('ansicolor').nice
     const index = 4 // [ timestamp, open, high, low, close, volume ]
 
 
-    const ohlcv = await new ccxt.btse ().fetchOHLCV ('BTC/USD', '1h')
+    const ohlcv = await new ccxt.btse ().fetchOHLCV ('BTC-USD', '1h')
 
 
     const lastPrice = ohlcv[ohlcv.length - 1][index] // closing price
