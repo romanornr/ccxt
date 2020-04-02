@@ -47,7 +47,7 @@ module.exports = class btse extends Exchange {
                     'web': 'https://www.btse.com',
                     'api': 'https://api.btse.com',
                     'spotv2': 'https://api.btse.com/spot/api/v2',
-                    'spotv3': 'https://api.btse.com/spot/api/v3',
+                    'spotv3': 'https://api.btse.com/spot/api/v3.1',
                     'spotv3private': 'https://testapi.btse.io/spot/v3',
                     'futuresv2': 'https://api.btse.com/futures/api/v2',
                     'testnet': 'https://testapi.btse.io',
@@ -316,7 +316,7 @@ module.exports = class btse extends Exchange {
         if (limit !== undefined) {
             request['end'] = limit;
         }
-        const response = await this.spotv2GetOhlcv (this.extend (request, params));
+        const response = await this.spotv3GetOhlcv (this.extend (request, params));
         return this.parseOHLCVs (response, market['id'].toUpperCase (), timeframe, since, limit);
     }
 
