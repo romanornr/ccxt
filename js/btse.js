@@ -138,10 +138,10 @@ module.exports = class btse extends Exchange {
     }
 
     async fetchMarkets (params = {}) {
-        const defaultType = this.safeString2 (this.options, 'GetMarketSummary', 'defaultType', 'futures');
+        const defaultType = this.safeString2 (this.options, 'GetMarketSummary', 'defaultType', 'spot');
         const type = this.safeString (params, 'type', defaultType);
         const query = this.omit (params, 'type');
-        const method = (type === 'futures') ? 'spotv3GetMarketSummary' : 'futuresv2GetMarketSummary';
+        const method = (type === 'spot') ? 'spotv3GetMarketSummary' : 'futuresv2GetMarketSummary';
         const response = await this[method] (query);
         const results = [];
         for (let i = 0; i < response.length; i++) {
