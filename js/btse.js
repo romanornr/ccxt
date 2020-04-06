@@ -195,8 +195,9 @@ module.exports = class btse extends Exchange {
 
     async fetchTicker (symbol, params = {}) {
         await this.loadMarkets ();
-        const type = this.safeString2 (this.options, 'GetMarketSummary', 'defaultType', 'spot');
-        const method = (type === 'futures') ? 'spotv3GetMarketSummary' : 'futuresv2GetMarketSummary';
+        const defaultType = this.safeString2 (this.options, 'GetMarketSummary', 'defaultType', 'spot');
+        const type = this.safeString (params, 'type', defaultType);
+        const method = (type === 'spot') ? 'spotv3GetMarketSummary' : 'futuresv2GetMarketSummary';
         const request = {
             'symbol': symbol,
         };

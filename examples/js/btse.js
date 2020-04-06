@@ -10,10 +10,22 @@ const log       = require ('ololog').configure ({ locate: false })
 //     console.log(await btse.fetchMarkets ())
 // }) ()
 
+// (async function(){
+//     //const btse = new ccxt.btse ();
+//     const btse = new ccxt.btse ({
+//         options: { defaultType: 'future' }
+//     });
+
+//     const symbol = 'ETHPFC';
+//     // const symbol = 'BTC-USDT';
+//     console.log(await btse.fetchTicker(symbol))
+// }) ()
+
+
 (async function(){
     const btse = new ccxt.btse ();
-    //const symbol = 'ETHPFC';
-    const symbol = 'BTC-USD';
+
+    const symbol = 'BTC-USDT';
     console.log(await btse.fetchTicker(symbol))
 }) ()
 
