@@ -319,9 +319,7 @@ module.exports = class btse extends Exchange {
         if (limit !== undefined) {
             request['limit'] = limit; // default == max == 300
         }
-        const defaultType = this.safeString2 (this.options, 'GetOhlcv', 'defaultType', 'spot');
-        const type = this.safeString (params, 'type', defaultType);
-        const method = (type === 'spot') ? 'spotv3GetOhlcv' : 'futuresv2GetOhlcv';
+        const method = market['spot'] ? 'spotv3GetOhlcv' : 'futuresv2GetOhlcv';
         const response = await this[method] (this.extend (request, params));
         // [
         //     [
