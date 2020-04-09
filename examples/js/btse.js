@@ -34,7 +34,7 @@ const log       = require ('ololog').configure ({ locate: false })
         options: { defaultType: 'future' }
     });
 
-    const ohlcv = await btse.fetchOHLCV ('ETHPFC', '1h')
+    const ohlcv = await btse.fetchOHLCV ('BTCPFC', '1h')
     console.log(ohlcv)
 }) ()
 

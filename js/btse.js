@@ -313,35 +313,53 @@ module.exports = class btse extends Exchange {
             'end': this.seconds (),
             'resolution': this.timeframes[timeframe],
         };
+        // max 300 candles, including the current candle when since is not specified
+        // limit = (limit === undefined) ? 301 : limit; // TODO fix ?
         if (since === undefined) {
             request['start'] = this.seconds () - 86400; // default from 24 hours ago
         } else {
             request['start'] = this.truncate (since / 1000, 0);
+            request['limit'] = limit;
+            request['end'] = this.sum (request['start'], limit * this.parseTimeframe (timeframe));
         }
         if (limit !== undefined) {
             request['end'] = limit;
         }
         const defaultType = this.safeString2 (this.options, 'GetOhlcv', 'defaultType', 'spot');
         const type = this.safeString (params, 'type', defaultType);
-        const method = (type === 'spot') ? 'spotv3GetOhlcv' : 'futuresv2GetGetOhlcv';
+        const method = (type === 'spot') ? 'spotv3GetOhlcv' : 'futuresv2GetOhlcv';
         const response = await this[method] (this.extend (request, params));
-
-        // const method = market['spot'] ? 'spotv3GetOhlcv' : 'futuresv2GetGetOhlcv';
-        // const response = await this[method] (this.extend (request, params));
-        // const response = await this.spotv3GetOhlcv (this.extend (request, params));
+        // [
+        //     [
+        //         1586466000,
+        //         7300.0,
+        //         7336.5,
+        //         7267.0,
+        //         7297.5,
+        //         2442223.812
+        //     ],
+        //     [
+        //         1586462400,
+        //         7269.5,
+        //         7327.0,
+        //         7243.5,
+        //         7300.0,
+        //         4018516.731
+        //     ]
+        // ]
         return this.parseOHLCVs (response, market['id'].toUpperCase (), timeframe, since, limit);
     }
 
-    // parseOHLCV (ohlcv, market = undefined, timeframe = '1m', since = undefined, limit = undefined) {
-    //     return [
-    //         ohlcv[0],
-    //         parseFloat (ohlcv[1]),
-    //         parseFloat (ohlcv[2]),
-    //         parseFloat (ohlcv[3]),
-    //         parseFloat (ohlcv[4]),
-    //         parseFloat (ohlcv[5]),
-    //     ];
-    // }
+    parseOHLCV (ohlcv, market = undefined, timeframe = '1h', since = undefined, limit = undefined) {
+        return [
+            parseFloat (ohlcv, 'time'),
+            parseFloat (ohlcv, 'open'),
+            parseFloat (ohlcv, 'high'),
+            parseFloat (ohlcv, 'low'),
+            parseFloat (ohlcv, 'close'),
+            parseFloat (ohlcv, 'volume'),
+        ];
+    }
 
     // TODO figure out
     parseOrderStatus (status) {
@@ -446,7 +464,7 @@ module.exports = class btse extends Exchange {
             headers['Content-Type'] = 'application/json';
         }
         body = (method === 'GET') ? null : bodyText;
-        // console.log (url)
+         console.log (url)
         return { 'url': url, 'method': method, 'body': body, 'headers': headers };
     }
 
