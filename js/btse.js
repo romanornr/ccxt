@@ -313,17 +313,11 @@ module.exports = class btse extends Exchange {
             'end': this.seconds (),
             'resolution': this.timeframes[timeframe],
         };
-        // max 300 candles, including the current candle when since is not specified
-        // limit = (limit === undefined) ? 301 : limit; // TODO fix ?
-        if (since === undefined) {
-            request['start'] = this.seconds () - 86400; // default from 24 hours ago
-        } else {
-            request['start'] = this.truncate (since / 1000, 0);
-            request['limit'] = limit;
-            request['end'] = this.sum (request['start'], limit * this.parseTimeframe (timeframe));
+        if (since !== undefined) {
+            request['start'] = since;
         }
         if (limit !== undefined) {
-            request['end'] = limit;
+            request['limit'] = limit; // default == max == 300
         }
         const defaultType = this.safeString2 (this.options, 'GetOhlcv', 'defaultType', 'spot');
         const type = this.safeString (params, 'type', defaultType);
@@ -352,12 +346,12 @@ module.exports = class btse extends Exchange {
 
     parseOHLCV (ohlcv, market = undefined, timeframe = '1h', since = undefined, limit = undefined) {
         return [
-            parseFloat (ohlcv, 'time'),
-            parseFloat (ohlcv, 'open'),
-            parseFloat (ohlcv, 'high'),
-            parseFloat (ohlcv, 'low'),
-            parseFloat (ohlcv, 'close'),
-            parseFloat (ohlcv, 'volume'),
+            ohlcv[0], // time
+            parseFloat (ohlcv[1]), // open
+            parseFloat (ohlcv[2]), // high
+            parseFloat (ohlcv[3]), // low
+            parseFloat (ohlcv[4]), // close
+            parseFloat (ohlcv[5]), // volume
         ];
     }
 
