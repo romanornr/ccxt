@@ -22,12 +22,22 @@ const log       = require ('ololog').configure ({ locate: false })
 // }) ()
 
 
-(async function(){
-    const btse = new ccxt.btse ();
+// (async function(){
+//     const btse = new ccxt.btse ();
+//
+//     const symbol = 'BTC-USDT';
+//     console.log(await btse.fetchTicker(symbol))
+// }) ()
 
-    const symbol = 'BTC-USDT';
-    console.log(await btse.fetchTicker(symbol))
+(async function(){
+    const btse = new ccxt.btse({
+        options: { defaultType: 'future' }
+    });
+
+    const ohlcv = await btse.fetchOHLCV ('ETHPFC', '1h')
+    console.log(ohlcv)
 }) ()
+
 
 // (async function(){
 //     const btse = new ccxt.btse ();

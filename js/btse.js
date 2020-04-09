@@ -321,9 +321,14 @@ module.exports = class btse extends Exchange {
         if (limit !== undefined) {
             request['end'] = limit;
         }
-        //const method = market['spot'] ? 'spotv3GetOhlcv' : 'futuresv2GetGetOhlcv';
-        //const response = await this[method] (this.extend (request, params));
-        const response = await this.spotv3GetOhlcv (this.extend (request, params));
+        const defaultType = this.safeString2 (this.options, 'GetOhlcv', 'defaultType', 'spot');
+        const type = this.safeString (params, 'type', defaultType);
+        const method = (type === 'spot') ? 'spotv3GetOhlcv' : 'futuresv2GetGetOhlcv';
+        const response = await this[method] (this.extend (request, params));
+
+        // const method = market['spot'] ? 'spotv3GetOhlcv' : 'futuresv2GetGetOhlcv';
+        // const response = await this[method] (this.extend (request, params));
+        // const response = await this.spotv3GetOhlcv (this.extend (request, params));
         return this.parseOHLCVs (response, market['id'].toUpperCase (), timeframe, since, limit);
     }
 
