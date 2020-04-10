@@ -25,23 +25,25 @@ const log       = require ('ololog').configure ({ locate: false })
 // (async function(){
 //     const btse = new ccxt.btse ();
 //
-//     const symbol = 'BTC-USDT';
+//     const symbol = '';
 //     console.log(await btse.fetchTicker(symbol))
 // }) ()
 
 (async function(){
     const btse = new ccxt.btse({
-        options: { defaultType: 'future' }
+        options: { defaultType: 'spot' }
     });
 
-    const ohlcv = await btse.fetchOHLCV ('BTCPFC', '1h')
+    const ohlcv = await btse.fetchOHLCV ('BTC-USD', '1h')
     console.log(ohlcv)
 }) ()
 
 
 // (async function(){
-//     const btse = new ccxt.btse ();
-//     const symbol = 'XMR/USD';
+//          const btse = new ccxt.btse({
+//          options: { defaultType: 'spot' }
+//      });
+//     const symbol = 'BTC-USDT';
 //     console.log (await btse.fetchOrderBook(symbol))
 // }) ()
 
