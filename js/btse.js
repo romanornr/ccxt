@@ -78,7 +78,7 @@ module.exports = class btse extends Exchange {
                         'market_summary', // get all markets
                         'market_summary?symbol={symbol}', // get single market
                         'ticker/{id}/',
-                        'orderbook/{id}',
+                        'orderbook?symbol={symbol}',
                         'trades/{id}',
                         'account',
                         'ohlcv',
@@ -100,6 +100,7 @@ module.exports = class btse extends Exchange {
                         'time',
                         'market_summary',
                         'market_summary?symbol={symbol}', // get single market
+                        'orderbook?symbol={symbol}',
                         'ohlcv',
                     ],
                 },
@@ -233,14 +234,14 @@ module.exports = class btse extends Exchange {
 
     async fetchOrderBook (symbol, limit = undefined, params = {}) {
         await this.loadMarkets ();
-        const market = this.market (symbol);
-        const method = market['spot'] ? 'spotv3GetMarketSummary' : 'futuresv2GetMarketSummary';
+        const defaultType = this.safeString2 (this.options, 'GetOrderbook', 'defaultType', 'spot');
+        const type = this.safeString (params, 'type', defaultType);
+        const method = (type === 'spot') ? 'spotv3GetOrderbook' : 'futuresv2GetOrderbook';
         const request = {
             'symbol': symbol,
         };
         const response = await this[method] (this.extend (request, params));
-        return this.parseTickers (response, symbol);
-        // return response;
+        console.log(response);
     }
 
     async fetchTrades (symbol, since = undefined, limit = undefined, params = {}) {
@@ -319,7 +320,9 @@ module.exports = class btse extends Exchange {
         if (limit !== undefined) {
             request['limit'] = limit; // default == max == 300
         }
-        const method = market['spot'] ? 'spotv3GetOhlcv' : 'futuresv2GetOhlcv';
+        const defaultType = this.safeString2 (this.options, 'GetOhlcv', 'default')
+        const type = this.safeString (params, 'type', defaultType);
+        const method = (type === 'spot') ? 'spotv3GetOhlcv' : 'futuresv2GetOhlcv';
         const response = await this[method] (this.extend (request, params));
         // [
         //     [
@@ -456,7 +459,7 @@ module.exports = class btse extends Exchange {
             headers['Content-Type'] = 'application/json';
         }
         body = (method === 'GET') ? null : bodyText;
-         console.log (url)
+        console.log (url)
         return { 'url': url, 'method': method, 'body': body, 'headers': headers };
     }
 
