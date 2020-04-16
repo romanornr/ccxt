@@ -44,7 +44,7 @@ const log       = require ('ololog').configure ({ locate: false })
          options: { defaultType: 'future' }
      });
     const symbol = 'ETHPFC';
-    console.log (await btse.fetchOrderBook(symbol))
+    console.log (await btse.fetchOrderBook(symbol, 2))
 }) ()
 
 // (async function(){

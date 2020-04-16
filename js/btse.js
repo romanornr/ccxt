@@ -241,7 +241,7 @@ module.exports = class btse extends Exchange {
             'symbol': symbol,
         };
         const response = await this[method] (this.extend (request, params));
-        console.log(response);
+        return response;
     }
 
     async fetchTrades (symbol, since = undefined, limit = undefined, params = {}) {
