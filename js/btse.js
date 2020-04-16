@@ -102,6 +102,7 @@ module.exports = class btse extends Exchange {
                         'market_summary?symbol={symbol}', // get single market
                         'orderbook?symbol={symbol}',
                         'ohlcv',
+                        'orderbook?symbol={symbol}',
                     ],
                 },
             },
@@ -234,14 +235,17 @@ module.exports = class btse extends Exchange {
 
     async fetchOrderBook (symbol, limit = undefined, params = {}) {
         await this.loadMarkets ();
-        const defaultType = this.safeString2 (this.options, 'GetOrderbook', 'defaultType', 'spot');
-        const type = this.safeString (params, 'type', defaultType);
-        const method = (type === 'spot') ? 'spotv3GetOrderbook' : 'futuresv2GetOrderbook';
         const request = {
             'symbol': symbol,
         };
+        const defaultType = this.safeString2 (this.options, 'GetOrderbook', 'defaultType', 'spot');
+        const type = this.safeString (params, 'type', defaultType);
+        const method = (type === 'spot') ? 'spotv3GetOrderbook' : 'futuresv2GetOrderbook';
         const response = await this[method] (this.extend (request, params));
-        return response;
+        const orderbook = this.parseOrderBook (response);
+        orderbook['nonce'] = this.safeInteger (response, 'timestamp');
+        return orderbook;
+        // return response;
     }
 
     async fetchTrades (symbol, since = undefined, limit = undefined, params = {}) {
@@ -320,9 +324,10 @@ module.exports = class btse extends Exchange {
         if (limit !== undefined) {
             request['limit'] = limit; // default == max == 300
         }
-        const defaultType = this.safeString2 (this.options, 'GetOhlcv', 'default')
+        const defaultType = this.safeString2 (this.options, 'GetOhlcv', 'defaultType', 'spot');
         const type = this.safeString (params, 'type', defaultType);
         const method = (type === 'spot') ? 'spotv3GetOhlcv' : 'futuresv2GetOhlcv';
+        // const method = market['spot'] ? 'spotv3GetOhlcv' : 'futuresv2GetOhlcv';
         const response = await this[method] (this.extend (request, params));
         // [
         //     [
