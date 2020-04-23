@@ -78,7 +78,7 @@ module.exports = class btse extends Exchange {
                         'market_summary', // get all markets
                         'market_summary?symbol={symbol}', // get single market
                         'ticker/{id}/',
-                        'orderbook?symbol={symbol}',
+                        'orderbook/L2',
                         'trades/{id}',
                         'account',
                         'ohlcv',
@@ -100,9 +100,8 @@ module.exports = class btse extends Exchange {
                         'time',
                         'market_summary',
                         'market_summary?symbol={symbol}', // get single market
-                        'orderbook?symbol={symbol}',
+                        'orderbook/L2',
                         'ohlcv',
-                        'orderbook?symbol={symbol}',
                     ],
                 },
             },
@@ -233,19 +232,55 @@ module.exports = class btse extends Exchange {
         };
     }
 
+    // parseOrderBook (orderbook, timestamp = undefined, bidsKey = 'buyQuote', asksKey = 'sellQuote', priceKey = 'price', amountKey = 'size') {
+    //     const bids = [];
+    //     const asks = [];
+    //     for (let i = 0; i < orderbook.length; i++) {
+    //         const bidask = orderbook[i];
+    //         const side = this.safeString (bidask, 'side');
+    //         if (side === 'Buy') {
+    //             bids.push (this.parseBidAsk (bidask, priceKey, amountKey));
+    //         } else if (side === 'Sell') {
+    //             asks.push (this.parseBidAsk (bidask, priceKey, amountKey));
+    //         } else {
+    //             throw new ExchangeError (this.id + ' parseOrderBook encountered an unrecognized bidask format: ' + this.json (bidask));
+    //         }
+    //     }
+    //     return {
+    //         'bids': this.sortBy (bids, 0, true),
+    //         'asks': this.sortBy (asks, 0),
+    //         'timestamp': timestamp,
+    //         'datetime': this.iso8601 (timestamp),
+    //         'nonce': undefined,
+    //     };
+    // }
+
     async fetchOrderBook (symbol, limit = undefined, params = {}) {
         await this.loadMarkets ();
         const request = {
             'symbol': symbol,
         };
-        const defaultType = this.safeString2 (this.options, 'GetOrderbook', 'defaultType', 'spot');
+        if (limit !== undefined) {
+            request['depth'] = limit; // default 100, max 5000, see https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#order-book
+        }
+        const defaultType = this.safeString2 (this.options, 'GetOrderBookL2', 'defaultType', 'spot');
         const type = this.safeString (params, 'type', defaultType);
-        const method = (type === 'spot') ? 'spotv3GetOrderbook' : 'futuresv2GetOrderbook';
+        const method = (type === 'spot') ? 'spotv3GetOrderbookL2' : 'futuresv2GetOrderbookL2';
         const response = await this[method] (this.extend (request, params));
-        const orderbook = this.parseOrderBook (response);
+        // {
+        //     buyQuote: [
+        //         { price: "7568.0", size: "1.026"}
+        //     ],
+        //     sellQuote: [
+        //         { price: "21742.0", size: "3.970" }
+        //     ],
+        //     timestamp: 1587680929683,
+        //     symbol: "BTC-USD",
+        // }
+        const timestamp = this.safeTimestamp (response, 'timestamp');
+        const orderbook = this.parseOrderBook (response, timestamp, 'buyQuote', 'sellQuote', 'price', 'size');
         orderbook['nonce'] = this.safeInteger (response, 'timestamp');
         return orderbook;
-        // return response;
     }
 
     async fetchTrades (symbol, since = undefined, limit = undefined, params = {}) {
