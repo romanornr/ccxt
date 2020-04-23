@@ -53,13 +53,13 @@ const log       = require ('ololog').configure ({ locate: false })
 
 
 /** ORDERBOOK **/
-(async function(){
-         const btse = new ccxt.btse({
-         options: { defaultType: 'spot' }
-     });
-    const symbol = 'BTC-USD';
-    console.log (await btse.fetchOrderBook(symbol, 2))
-}) ()
+// (async function(){
+//          const btse = new ccxt.btse({
+//          options: { defaultType: 'spot' }
+//      });
+//     const symbol = 'BTC-USD';
+//     console.log (await btse.fetchOrderBook(symbol, 2))
+// }) ()
 
 // (async function(){
 //     const btse = new ccxt.btse({
@@ -68,6 +68,24 @@ const log       = require ('ololog').configure ({ locate: false })
 // const symbol = 'BTCPFC';
 // console.log (await btse.fetchOrderBook(symbol, 1))
 // }) ()
+
+/** TRADES **/
+// (async function(){
+//          const btse = new ccxt.btse({
+//          options: { defaultType: 'spot' }
+//      });
+//     const symbol = 'BTC-USD';
+//     console.log (await btse.fetchTrades(symbol, 2))
+// }) ()
+
+(async function(){
+    const btse = new ccxt.btse({
+    options: { defaultType: 'future' }
+});
+const symbol = 'BTCPFC';
+console.log (await btse.fetchTrades(symbol, 2))
+}) ()
+
 
 // (async function(){
 //     const btse = new ccxt.btse ();

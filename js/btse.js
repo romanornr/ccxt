@@ -49,7 +49,7 @@ module.exports = class btse extends Exchange {
                     'spotv2': 'https://api.btse.com/spot/api/v2',
                     'spotv3': 'https://api.btse.com/spot/api/v3.1',
                     'spotv3private': 'https://testapi.btse.io/spot/v3',
-                    'futuresv2': 'https://api.btse.com/futures/api/v2',
+                    'futuresv2': 'https://api.btse.com/futures/api/v2.1',
                     'testnet': 'https://testapi.btse.io',
                 },
                 'www': 'https://www.btse.com',
@@ -67,7 +67,7 @@ module.exports = class btse extends Exchange {
                         'market_summary',
                         'ticker/{id}/',
                         'orderbook/{id}',
-                        'trades/{id}',
+                        'trades',
                         'account',
                         'ohlcv',
                     ],
@@ -76,10 +76,8 @@ module.exports = class btse extends Exchange {
                     'get': [
                         'time',
                         'market_summary', // get all markets
-                        'market_summary?symbol={symbol}', // get single market
-                        'ticker/{id}/',
                         'orderbook/L2',
-                        'trades/{id}',
+                        'trades',
                         'account',
                         'ohlcv',
                     ],
@@ -99,9 +97,9 @@ module.exports = class btse extends Exchange {
                     'get': [
                         'time',
                         'market_summary',
-                        'market_summary?symbol={symbol}', // get single market
                         'orderbook/L2',
                         'ohlcv',
+                        'trades',
                     ],
                 },
             },
@@ -232,29 +230,6 @@ module.exports = class btse extends Exchange {
         };
     }
 
-    // parseOrderBook (orderbook, timestamp = undefined, bidsKey = 'buyQuote', asksKey = 'sellQuote', priceKey = 'price', amountKey = 'size') {
-    //     const bids = [];
-    //     const asks = [];
-    //     for (let i = 0; i < orderbook.length; i++) {
-    //         const bidask = orderbook[i];
-    //         const side = this.safeString (bidask, 'side');
-    //         if (side === 'Buy') {
-    //             bids.push (this.parseBidAsk (bidask, priceKey, amountKey));
-    //         } else if (side === 'Sell') {
-    //             asks.push (this.parseBidAsk (bidask, priceKey, amountKey));
-    //         } else {
-    //             throw new ExchangeError (this.id + ' parseOrderBook encountered an unrecognized bidask format: ' + this.json (bidask));
-    //         }
-    //     }
-    //     return {
-    //         'bids': this.sortBy (bids, 0, true),
-    //         'asks': this.sortBy (asks, 0),
-    //         'timestamp': timestamp,
-    //         'datetime': this.iso8601 (timestamp),
-    //         'nonce': undefined,
-    //     };
-    // }
-
     async fetchOrderBook (symbol, limit = undefined, params = {}) {
         await this.loadMarkets ();
         const request = {
@@ -287,21 +262,28 @@ module.exports = class btse extends Exchange {
         await this.loadMarkets ();
         const market = this.market (symbol);
         const request = {
-            'id': symbol.replace ('/', '-'),
+            'symbol': symbol,
         };
         if (limit !== undefined) {
-            request['limit'] = limit;
+            request['count'] = limit;
         } else {
-            request['limit'] = 10000;
+            request['count'] = 5;
         }
-        const response = await this.spotv2GetTradesId (this.extend (request, params));
-        const result2 = [];
-        for (let i = 0; i < response.length; i++) {
-            response[i].timestamp = new Date (response[i].time).getTime ();
-            result2.push (response[i]);
-        }
-        console.log (result2);
-        return this.parseTrades (result2, market, since, limit);
+        // [
+        //     {
+        //         price: 7467.5,
+        //         size: 31,
+        //         side: "BUY",
+        //         symbol: "BTCPFC",
+        //         serialId: 131840942,
+        //         timestamp: 1587685195324,
+        //     }
+        // ]
+        const defaultType = this.safeString2 (this.options, 'GetTrades', 'defaultType', 'spot');
+        const type = this.safeString (params, 'type', defaultType);
+        const method = (type === 'spot') ? 'spotv3GetTrades' : 'futuresv2GetTrades';
+        const response = await this[method] (this.extend (request, params));
+        return this.parseTrades (response, market, since, limit);
     }
 
     parseTrade (trade, market) {
@@ -314,13 +296,13 @@ module.exports = class btse extends Exchange {
             'symbol': market['symbol'],
             'type': this.safeString (trade, 'type'),
             'price': this.safeFloat (trade, 'price'),
-            'amount': this.safeFloat (trade, 'amount'),
+            'amount': this.safeFloat (trade, 'size'),
 
             'takerOrMarker': undefined, // private
             'cost': undefined, // private
             'fee': undefined, // private
-            'orderId': undefined, // private
-            'side': this.safeString (trade, 'type'),
+            'orderId': this.safeString (trade, 'serialId'),
+            'side': this.safeString (trade, 'side'),
         };
     }
 
