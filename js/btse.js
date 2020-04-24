@@ -48,7 +48,7 @@ module.exports = class btse extends Exchange {
                     'api': 'https://api.btse.com',
                     'spotv2': 'https://api.btse.com/spot/api/v2',
                     'spotv3': 'https://api.btse.com/spot/api/v3.1',
-                    'spotv3private': 'https://testapi.btse.io/spot/v3',
+                    'spotv3private': 'https://api.btse.com/spot/api/v3.1',
                     'futuresv2': 'https://api.btse.com/futures/api/v2.1',
                     'testnet': 'https://testapi.btse.io',
                 },
@@ -81,11 +81,16 @@ module.exports = class btse extends Exchange {
                         'account',
                         'ohlcv',
                     ],
+                    'post': [
+                        'order',
+                        'deleteOrder',
+                        'fills',
+                    ],
                 },
-                'spotv2private': {
+                'spotv3private': {
                     'get': [
                         'pending',
-                        'account',
+                        'user/wallet',
                     ],
                     'post': [
                         'order',
@@ -129,7 +134,7 @@ module.exports = class btse extends Exchange {
         const type = this.safeString2 (this.options, 'fetchTime', 'defaultType', 'spot');
         const method = (type === 'spot') ? 'spotv3GetTime' : 'futuresv2GetTime';
         // eslint-disable-next-line no-undef
-        const response = await this[method] (params);
+        const response = await this[method];
         const after = this.milliseconds ();
         const serverTime = parseInt (response['epoch'] * 1000);
         this.options['timeDifference'] = parseInt (after - serverTime);
@@ -307,11 +312,15 @@ module.exports = class btse extends Exchange {
     }
 
     async fetchBalance (params = {}) {
-        if (this.options['adjustTimeDifference']) {
-            await this.loadTimeDifference ();
-        }
+        // if (this.options['adjustTimeDifference']) {
+        //     await this.loadTimeDifference ();
+        // }
+
+        // if (this.options['timeDifference'] = parseInt (after - serverTime);
+        // return this.options['timeDifference'];
+        await this.loadTimeDifference ();
         await this.loadMarkets ();
-        const response = await this.spotv2privateGetAccount (params);
+        const response = await this.spotv3privateGetUserWallet (params);
         const result = {
             'info': response,
         };
@@ -393,21 +402,21 @@ module.exports = class btse extends Exchange {
     //
     // }
 
-    async createOrder (symbol, type, side, amount, price = undefined, params = {}) {
-        if (this.options['adjustTimeDifference']) {
-            await this.loadTimeDifference ();
-        }
+    async createOrder (symbol, type, side, size, price = undefined, params = {}) {
+        // if (this.options['adjustTimeDifference']) {
+        //     await this.loadTimeDifference ();
+        // }
         await this.loadMarkets ();
-        const market = this.market (symbol);
+        //const market = this.market (symbol);
         const request = {
-            'symbol': market['symbol'].replace ('/', '-'),
+            'symbol': symbol,
             'side': side,
-            'amount': amount,
+            'size': size,
             'type': type,
             'price': price,
             'time_in_force': 'gtc',
         };
-        const response = await this.spotv2privatePostOrder (this.extend (request, params));
+        const response = await this.spotv3privatePostOrder (this.extend (request, params));
         const order = this.safeValue (response, 'id');
         if (order === undefined) {
             console.log ('err');
@@ -468,7 +477,7 @@ module.exports = class btse extends Exchange {
                 url += '?' + this.urlencode (params);
             }
         }
-        if (api === 'spotv2private') {
+        if (api === 'spotv3private') {
             bodyText = JSON.stringify (params);
             const signaturePath = this.cleanSignaturePath (url);
             const nonce = this.nonce ();

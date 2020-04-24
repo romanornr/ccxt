@@ -52,12 +52,12 @@ const log       = require ('ololog').configure ({ locate: false })
 // }) ()
 
 
-/** ORDERBOOK **/
+// /** ORDERBOOK **/
 // (async function(){
 //          const btse = new ccxt.btse({
 //          options: { defaultType: 'spot' }
 //      });
-//     const symbol = 'BTC-USD';
+//     const symbol = 'ETH-USD';
 //     console.log (await btse.fetchOrderBook(symbol, 2))
 // }) ()
 
@@ -78,13 +78,13 @@ const log       = require ('ololog').configure ({ locate: false })
 //     console.log (await btse.fetchTrades(symbol, 2))
 // }) ()
 
-(async function(){
-    const btse = new ccxt.btse({
-    options: { defaultType: 'future' }
-});
-const symbol = 'BTCPFC';
-console.log (await btse.fetchTrades(symbol, 2))
-}) ()
+// (async function(){
+//     const btse = new ccxt.btse({
+//     options: { defaultType: 'future' }
+// });
+// const symbol = 'BTCPFC';
+// console.log (await btse.fetchTrades(symbol, 2))
+// }) ()
 
 
 // (async function(){
@@ -93,14 +93,19 @@ console.log (await btse.fetchTrades(symbol, 2))
 //     console.log (await btse.fetchTrades(symbol))
 // }) ()
 
-// (async function() {
-//     const exchange = new ccxt.btse ({
-//         'apiKey': 'MjIyOGU1NDAyOWVkNDI4Njg1ZWVjMzMwY2E1YzZhOTQ=',
-//         'secret': 'M2I5NTMzZGE4MGViNDIy',
-//     });
-//
-//     await exchange.fetchBalance();
-//
-//     console.log (await exchange.fetchBalance() )
-//
-// })();
+(async function() {
+    // const exchange = new ccxt.btse ({
+    //     'apiKey': 'MjIyOGU1NDAyOWVkNDI4Njg1ZWVjMzMwY2E1YzZhOTQ=',
+    //     'secret': 'M2I5NTMzZGE4MGViNDIy',
+    // });
+
+    const exchange = new ccxt.btse ({
+        'apiKey': 'NmU5NjBkODk4ZmNjNDE0MDlhMGM1MmU3OWIxYTY2YjU=',
+        'secret': 'OWU2ZGUwZTI1OGE0NGI4',
+    });
+
+    await exchange.fetchBalance();
+
+    console.log (await exchange.fetchBalance() )
+
+})();

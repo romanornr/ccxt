@@ -34,7 +34,7 @@ const exchange = new ccxt.btse ({
     'secret': 'M2I5NTMzZGE4MGViNDIy'
 })
 
-const symbol = 'BTC/USD'; // edit here
+const symbol = 'BTC-USD'; // edit here
 const type = 'limit';     // edit here
 const side = 'buy';       // edit here
 const amount = '0.002';         // edit here
