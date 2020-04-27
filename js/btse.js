@@ -312,13 +312,6 @@ module.exports = class btse extends Exchange {
     }
 
     async fetchBalance (params = {}) {
-        // if (this.options['adjustTimeDifference']) {
-        //     await this.loadTimeDifference ();
-        // }
-
-        // if (this.options['timeDifference'] = parseInt (after - serverTime);
-        // return this.options['timeDifference'];
-        await this.loadTimeDifference ();
         await this.loadMarkets ();
         const response = await this.spotv3privateGetUserWallet (params);
         const result = {
@@ -403,9 +396,9 @@ module.exports = class btse extends Exchange {
     // }
 
     async createOrder (symbol, type, side, size, price = undefined, params = {}) {
-        // if (this.options['adjustTimeDifference']) {
-        //     await this.loadTimeDifference ();
-        // }
+        if (this.options['adjustTimeDifference']) {
+            await this.loadTimeDifference ();
+        }
         await this.loadMarkets ();
         //const market = this.market (symbol);
         const request = {
@@ -478,9 +471,10 @@ module.exports = class btse extends Exchange {
             }
         }
         if (api === 'spotv3private') {
+            this.checkRequiredCredentials ();
             bodyText = JSON.stringify (params);
             const signaturePath = this.cleanSignaturePath (url);
-            const nonce = this.nonce ();
+            const nonce = this.nonce ().toString ();
             const signature = (method === 'GET')
                 ? this.createSignature (this.secret, nonce, signaturePath)
                 : this.createSignature (this.secret, nonce, signaturePath, bodyText);
@@ -490,11 +484,11 @@ module.exports = class btse extends Exchange {
             headers['Content-Type'] = 'application/json';
         }
         body = (method === 'GET') ? null : bodyText;
-        console.log (url)
         return { 'url': url, 'method': method, 'body': body, 'headers': headers };
     }
 
     createSignature (key, nonce, path, body = null) {
+        path = 'api/v3.1/user/wallet'; // TODO needs fix
         const content = body == null ? this.encode ('/' + path + nonce) : this.encode ('/' + path + nonce + body);
         return this.hmac (content, key, 'sha384');
     }

@@ -29,10 +29,15 @@ const tryToCreateOrder = async function (exchange, symbol, type, side, amount, p
 
 // ----------------------------------------------------------------------------
 
+// const exchange = new ccxt.btse ({
+//     'apiKey': 'MjIyOGU1NDAyOWVkNDI4Njg1ZWVjMzMwY2E1YzZhOTQ=',
+//     'secret': 'M2I5NTMzZGE4MGViNDIy'
+// })
+
 const exchange = new ccxt.btse ({
-    'apiKey': 'MjIyOGU1NDAyOWVkNDI4Njg1ZWVjMzMwY2E1YzZhOTQ=',
-    'secret': 'M2I5NTMzZGE4MGViNDIy'
-})
+    'apiKey': 'NmU5NjBkODk4ZmNjNDE0MDlhMGM1MmU3OWIxYTY2YjU=',
+    'secret': 'OWU2ZGUwZTI1OGE0NGI4',
+});
 
 const symbol = 'BTC-USD'; // edit here
 const type = 'limit';     // edit here
