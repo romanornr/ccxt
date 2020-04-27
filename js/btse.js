@@ -159,7 +159,7 @@ module.exports = class btse extends Exchange {
             const quote = this.safeCurrencyCode (quoteId);
             const active = this.safeValue (market, 'active');
             const symbol = this.safeString (market, 'symbol'); // base + '/' + quote;
-            const id = this.safeValue (market, 'symbol').replace (/-/g, '').toLowerCase ();
+            const id = this.safeValue (market, 'symbol');
             const sizeIncrement = this.safeFloat (market, 'minSizeIncrement');
             const priceIncrement = this.safeFloat (market, 'minPriceIncrement');
             const precision = {
@@ -199,11 +199,12 @@ module.exports = class btse extends Exchange {
 
     async fetchTicker (symbol, params = {}) {
         await this.loadMarkets ();
+        const market = this.market (symbol)
         const defaultType = this.safeString2 (this.options, 'GetMarketSummary', 'defaultType', 'spot');
         const type = this.safeString (params, 'type', defaultType);
         const method = (type === 'spot') ? 'spotv3GetMarketSummary' : 'futuresv2GetMarketSummary';
         const request = {
-            'symbol': symbol,
+            'symbol': market['id'],
         };
         const response = await this[method] (this.extend (request, params));
         return this.parseTicker (response, symbol);
@@ -237,8 +238,9 @@ module.exports = class btse extends Exchange {
 
     async fetchOrderBook (symbol, limit = undefined, params = {}) {
         await this.loadMarkets ();
+        const market = this.market (symbol)
         const request = {
-            'symbol': symbol,
+            'symbol': market['id'],
         };
         if (limit !== undefined) {
             request['depth'] = limit; // default 100, max 5000, see https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#order-book
@@ -267,7 +269,7 @@ module.exports = class btse extends Exchange {
         await this.loadMarkets ();
         const market = this.market (symbol);
         const request = {
-            'symbol': symbol,
+            'symbol': market['id'],
         };
         if (limit !== undefined) {
             request['count'] = limit;
@@ -333,7 +335,7 @@ module.exports = class btse extends Exchange {
         await this.loadMarkets ();
         const market = this.market (symbol);
         const request = {
-            'symbol': symbol,
+            'symbol': market['id'],
             'end': this.seconds (),
             'resolution': this.timeframes[timeframe],
         };
@@ -346,7 +348,6 @@ module.exports = class btse extends Exchange {
         const defaultType = this.safeString2 (this.options, 'GetOhlcv', 'defaultType', 'spot');
         const type = this.safeString (params, 'type', defaultType);
         const method = (type === 'spot') ? 'spotv3GetOhlcv' : 'futuresv2GetOhlcv';
-        // const method = market['spot'] ? 'spotv3GetOhlcv' : 'futuresv2GetOhlcv';
         const response = await this[method] (this.extend (request, params));
         // [
         //     [
@@ -397,8 +398,9 @@ module.exports = class btse extends Exchange {
 
     async createOrder (symbol, type, side, size, price = undefined, params = {}) {
         await this.loadMarkets ();
+        const market = this.market (symbol)
         const request = {
-            'symbol': symbol,
+            'symbol': market['id'],
             'side': side,
             'size': size,
             'type': type,
@@ -419,7 +421,7 @@ module.exports = class btse extends Exchange {
         await this.loadMarkets ();
         const market = this.market (symbol);
         const request = {
-            'symbol': market['symbol'].replace ('/', '-'),
+            'symbol': market['symbol'],
             'order_id': id,
         };
         // eslint-disable-next-line no-unused-vars
