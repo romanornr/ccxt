@@ -474,6 +474,7 @@ module.exports = class btse extends Exchange {
             this.checkRequiredCredentials ();
             bodyText = JSON.stringify (params);
             const signaturePath = this.cleanSignaturePath (url);
+            console.log (signaturePath);
             const nonce = this.nonce ().toString ();
             const signature = (method === 'GET')
                 ? this.createSignature (this.secret, nonce, signaturePath)
@@ -488,12 +489,11 @@ module.exports = class btse extends Exchange {
     }
 
     createSignature (key, nonce, path, body = null) {
-        path = 'api/v3.1/user/wallet'; // TODO needs fix
         const content = body == null ? this.encode ('/' + path + nonce) : this.encode ('/' + path + nonce + body);
         return this.hmac (content, key, 'sha384');
     }
 
     cleanSignaturePath (url) {
-        return url.replace ('https://api.btse.com/', '');
+        return url.replace ('https://api.btse.com/spot/', '');
     }
 };
