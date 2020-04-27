@@ -414,10 +414,9 @@ module.exports = class btse extends Exchange {
         // ]
         const id = this.safeString (order, 'orderID');
         const timestamp = this.parse8601 (this.safeString (order, 'timestamp'));
-        const filled = this.safeFloat (order, 'fillSize:');
-        // const remaining = this.safeFloat (order, 'remainingSize');
+        const filled = this.safeFloat (order, 'fillSize');
         let symbol = undefined;
-        const marketId = this.safeString (order, 'market');
+        const marketId = this.safeString (order, 'symbol');
         if (marketId in this.markets_by_id) {
             market = this.markets_by_id[marketId];
             symbol = market['symbol'];
@@ -429,10 +428,11 @@ module.exports = class btse extends Exchange {
         const side = this.safeString (order, 'side');
         // const type = this.safeString (order, 'type');
         const amount = this.safeFloat (order, 'size');
+        const remaining = this.safeFloat (amount - filled); // TODO fails: undefined
         const average = this.safeFloat (order, 'averageFillPrice:');
         const price = this.safeFloat2 (order, 'price', 'triggerPrice:', average);
         let cost = undefined;
-        if (filled !== undefined && price !== undefined) {
+        if (filled !== 0 && price !== undefined) {
             cost = filled * price;
         }
         // const lastTradeTimestamp = this.parse8601 (this.safeString (order, 'triggeredAt'));
@@ -452,7 +452,7 @@ module.exports = class btse extends Exchange {
             'cost': cost,
             'average': average,
             'filled': filled,
-            // 'remaining': remaining,
+            'remaining': remaining,
             'status': status,
             'fee': undefined,
             'trades': undefined,
@@ -476,7 +476,7 @@ module.exports = class btse extends Exchange {
             console.log ('err order undefined');
             return response;
         }
-        const o = this.parseOrder (response)
+        const o = this.parseOrder (response[0])
         console.log (o);
         return o;
         // return this.parseOrder (order);
