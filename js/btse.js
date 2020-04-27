@@ -392,9 +392,72 @@ module.exports = class btse extends Exchange {
     }
 
     // // TODO figure out
-    // parseOrder (order, market = undefined) {
-    //
-    // }
+    parseOrder (order, market = undefined) {
+        // [
+        //     {
+        //         "status": 2,
+        //         "symbol": "BTC-USD",
+        //         "orderType": 76,
+        //         "price": 3000.0,
+        //         "side": "BUY",
+        //         "size": 0.002,
+        //         "orderID": "299c9caa-ce3a-4054-b541-af2aaeaaa933",
+        //         "timestamp": 1588019952927,
+        //         "triggerPrice": 0.0,
+        //         "stopPrice": null,
+        //         "trigger": false,
+        //         "message": "",
+        //         "averageFillPrice": 0.0,
+        //         "fillSize": 0.0,
+        //         "clOrderID": ""
+        //     }
+        // ]
+        const id = this.safeString (order, 'orderID');
+        const timestamp = this.parse8601 (this.safeString (order, 'timestamp'));
+        const filled = this.safeFloat (order, 'fillSize:');
+        // const remaining = this.safeFloat (order, 'remainingSize');
+        let symbol = undefined;
+        const marketId = this.safeString (order, 'market');
+        if (marketId in this.markets_by_id) {
+            market = this.markets_by_id[marketId];
+            symbol = market['symbol'];
+        }
+        if ((symbol === undefined) && (market !== undefined)) {
+            symbol = market['symbol'];
+        }
+        const status = this.parseOrderStatus (this.safeString (order, 'status'));
+        const side = this.safeString (order, 'side');
+        // const type = this.safeString (order, 'type');
+        const amount = this.safeFloat (order, 'size');
+        const average = this.safeFloat (order, 'averageFillPrice:');
+        const price = this.safeFloat2 (order, 'price', 'triggerPrice:', average);
+        let cost = undefined;
+        if (filled !== undefined && price !== undefined) {
+            cost = filled * price;
+        }
+        // const lastTradeTimestamp = this.parse8601 (this.safeString (order, 'triggeredAt'));
+        const clientOrderId = this.safeString (order, 'clOrderID');
+        return {
+            'info': order,
+            'id': id,
+            'clientOrderId': clientOrderId,
+            'timestamp': timestamp,
+            'datetime': this.iso8601 (timestamp),
+            // 'lastTradeTimestamp': lastTradeTimestamp,
+            'symbol': symbol,
+            // 'type': type,
+            'side': side,
+            'price': price,
+            'amount': amount,
+            'cost': cost,
+            'average': average,
+            'filled': filled,
+            // 'remaining': remaining,
+            'status': status,
+            'fee': undefined,
+            'trades': undefined,
+        };
+    }
 
     async createOrder (symbol, type, side, size, price = undefined, params = {}) {
         await this.loadMarkets ();
@@ -413,8 +476,10 @@ module.exports = class btse extends Exchange {
             console.log ('err order undefined');
             return response;
         }
-        console.log (response);
-        return this.parseOrder (order);
+        const o = this.parseOrder (response)
+        console.log (o);
+        return o;
+        // return this.parseOrder (order);
     }
 
     async cancelOrder (id, symbol = undefined, params = {}) {
