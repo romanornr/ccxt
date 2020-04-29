@@ -91,11 +91,15 @@ module.exports = class btse extends Exchange {
                     'get': [
                         'pending',
                         'user/wallet',
+                        'user/open_orders',
                     ],
                     'post': [
                         'order',
                         'deleteOrder',
                         'fills',
+                    ],
+                    'delete': [
+                        'order',
                     ],
                 },
                 'futuresv2': {
@@ -482,15 +486,23 @@ module.exports = class btse extends Exchange {
         // return this.parseOrder (order);
     }
 
-    async cancelOrder (id, symbol = undefined, params = {}) {
+    async cancelOrder (id, symbol, params = {}) {
         await this.loadMarkets ();
         const market = this.market (symbol);
+        console.log(market['symbol'])
         const request = {
             'symbol': market['symbol'],
-            'order_id': id,
+            'orderID': id,
         };
-        // eslint-disable-next-line no-unused-vars
-        const response = await this.spotv2privatePostDeleteOrder (this.extend (request, params));
+        const response = await this.spotv3privateDeleteOrder (this.extend (request, params));
+        const order = this.safeValue (response[0], 'orderID');
+        if (order === undefined) {
+            console.log ('err order undefined');
+            return response;
+        }
+        const o = this.parseOrder (response[0])
+        console.log (o);
+        return o;
         // TODO parseOrder response
     }
 
@@ -504,7 +516,7 @@ module.exports = class btse extends Exchange {
         //     'symbol': market['symbol'].replace ('/', '-'),
         // };
         // const response = await this.spotv2privateGetPending (this.extend (request, params));
-        const response = await this.spotv2privateGetPending ();
+        const response = await this.spotv2privateGetUserOpenOrders ();
         console.log (response);
 
         // TODO fix 403 giving request
