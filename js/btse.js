@@ -480,10 +480,7 @@ module.exports = class btse extends Exchange {
             console.log ('err order undefined');
             return response;
         }
-        const o = this.parseOrder (response[0])
-        console.log (o);
-        return o;
-        // return this.parseOrder (order);
+        return this.parseOrder (response[0]);
     }
 
     async cancelOrder (id, symbol, params = {}) {
@@ -506,22 +503,20 @@ module.exports = class btse extends Exchange {
         // TODO parseOrder response
     }
 
-    async fetchOpenOrders (symbol = undefined, since = undefined, limit = undefined, params = {}) {
-        if (this.options['adjustTimeDifference']) {
-            await this.loadTimeDifference ();
-        }
+    async fetchOpenOrders (symbol, orderId, params = {}) {
         await this.loadMarkets ();
-        // const market = this.market (symbol);
-        // const request = {
-        //     'symbol': market['symbol'].replace ('/', '-'),
-        // };
-        // const response = await this.spotv2privateGetPending (this.extend (request, params));
-        const response = await this.spotv2privateGetUserOpenOrders ();
+        const market = this.market (symbol)
+        const request = {
+            'symbol': market['id'],
+            'orderID': orderId,
+            // 'clOrderID': '',
+        };
+        const response = await this.spotv3privateGetUserOpenOrders (this.extend (request, params));
         console.log (response);
 
-        // TODO fix 403 giving request
+        // TODO fix 400 giving request
 
-        // TODO parseOrder respose
+        // TODO parseOrder response
     }
 
     async fetchClosedOrders (symbol = undefined, since = undefined, limit = undefined, params = {}) {

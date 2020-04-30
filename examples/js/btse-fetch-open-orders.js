@@ -11,9 +11,10 @@ const log       = require ('ololog').configure ({ locate: false })
     });
 
     const symbol = 'BTC-USD'; // edit here
+    const orderId = 'cc742899-2587-4dcf-95b7-8f6d1259d6c8';
 
     const params = {}        // edit here
 
-    let orders = await exchange.fetchOpenOrders(symbol)
+    let orders = await exchange.fetchOpenOrders(symbol, orderId)
     console.log (orders)
 }) ()
