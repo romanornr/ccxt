@@ -11,7 +11,7 @@ use \ccxt\ArgumentsRequired;
 class coinfalcon extends Exchange {
 
     public function describe() {
-        return array_replace_recursive(parent::describe (), array(
+        return $this->deep_extend(parent::describe (), array(
             'id' => 'coinfalcon',
             'name' => 'CoinFalcon',
             'countries' => array( 'GB' ),
@@ -342,6 +342,8 @@ class coinfalcon extends Exchange {
             'trades' => null,
             'fee' => null,
             'info' => $order,
+            'lastTradeTimestamp' => null,
+            'average' => null,
         );
     }
 

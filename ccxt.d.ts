@@ -434,7 +434,7 @@ declare module 'ccxt' {
     export class anxpro extends Exchange {}
     export class aofex extends Exchange {}
     export class bcex extends Exchange {}
-    export class bequant extends hitbtc2 {}
+    export class bequant extends hitbtc {}
     export class bibox extends Exchange {}
     export class bigone extends Exchange {}
     export class binance extends Exchange {}
@@ -449,7 +449,6 @@ declare module 'ccxt' {
     export class bitforex extends Exchange {}
     export class bithumb extends Exchange {}
     export class bitkk extends zb {}
-    export class bitlish extends Exchange {}
     export class bitmart extends Exchange {}
     export class bitmax extends Exchange {}
     export class bitmex extends Exchange {}
@@ -473,7 +472,6 @@ declare module 'ccxt' {
     export class bytetrade extends Exchange {}
     export class cex extends Exchange {}
     export class chilebit extends foxbit {}
-    export class cobinhood extends Exchange {}
     export class coinbase extends Exchange {}
     export class coinbaseprime extends coinbasepro {}
     export class coinbasepro extends Exchange {}
@@ -504,7 +502,6 @@ declare module 'ccxt' {
     export class gateio extends Exchange {}
     export class gemini extends Exchange {}
     export class hitbtc extends Exchange {}
-    export class hitbtc2 extends hitbtc {}
     export class hollaex extends Exchange {}
     export class huobipro extends Exchange {}
     export class huobiru extends huobipro {}

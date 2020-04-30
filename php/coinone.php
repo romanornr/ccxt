@@ -14,7 +14,7 @@ use \ccxt\OrderNotFound;
 class coinone extends Exchange {
 
     public function describe() {
-        return array_replace_recursive(parent::describe (), array(
+        return $this->deep_extend(parent::describe (), array(
             'id' => 'coinone',
             'name' => 'CoinOne',
             'countries' => array( 'KR' ), // Korea
@@ -310,6 +310,8 @@ class coinone extends Exchange {
             'remaining' => $amount,
             'status' => 'open',
             'fee' => null,
+            'clientOrderId' => null,
+            'trades' => null,
         );
         $this->orders[$id] = $order;
         return $order;
@@ -428,6 +430,8 @@ class coinone extends Exchange {
             'remaining' => $remaining,
             'status' => $status,
             'fee' => $fee,
+            'average' => null,
+            'trades' => null,
         );
     }
 

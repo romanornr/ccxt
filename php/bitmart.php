@@ -13,7 +13,7 @@ use \ccxt\ArgumentsRequired;
 class bitmart extends Exchange {
 
     public function describe() {
-        return array_replace_recursive(parent::describe (), array(
+        return $this->deep_extend(parent::describe (), array(
             'id' => 'bitmart',
             'name' => 'BitMart',
             'countries' => array( 'US', 'CN', 'HK', 'KR' ),
@@ -40,6 +40,7 @@ class bitmart extends Exchange {
                 'fetchClosedOrders' => true,
                 'fetchCanceledOrders' => true,
                 'fetchOrder' => true,
+                'signIn' => true,
             ),
             'urls' => array(
                 'logo' => 'https://user-images.githubusercontent.com/1294454/61835713-a2662f80-ae85-11e9-9d00-6442919701fd.jpg',
@@ -47,6 +48,7 @@ class bitmart extends Exchange {
                 'www' => 'https://www.bitmart.com/',
                 'doc' => 'https://github.com/bitmartexchange/bitmart-official-api-docs',
                 'referral' => 'http://www.bitmart.com/?r=rQCFLh',
+                'fees' => 'https://www.bitmart.com/fee/en',
             ),
             'requiredCredentials' => array(
                 'apiKey' => true,
@@ -254,6 +256,7 @@ class bitmart extends Exchange {
                 'precision' => $precision,
                 'limits' => $limits,
                 'info' => $market,
+                'active' => null,
             );
         }
         return $result;

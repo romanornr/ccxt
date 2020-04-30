@@ -921,6 +921,7 @@ class bitstamp(Exchange):
             'trades': trades,
             'fee': fee,
             'info': order,
+            'average': None,
         }
 
     async def fetch_open_orders(self, symbol=None, since=None, limit=None, params={}):
@@ -1051,9 +1052,17 @@ class bitstamp(Exchange):
                         body = self.urlencode(query)
                         contentType = 'application/x-www-form-urlencoded'
                         headers['Content-Type'] = contentType
+                    else:
+                        # sending an empty POST request will trigger
+                        # an API0020 error returned by the exchange
+                        # therefore for empty requests we send a dummy object
+                        # https://github.com/ccxt/ccxt/issues/6846
+                        body = self.urlencode({'foo': 'bar'})
+                        contentType = 'application/x-www-form-urlencoded'
+                        headers['Content-Type'] = contentType
                 authBody = body if body else ''
                 auth = xAuth + method + url.replace('https://', '') + contentType + xAuthNonce + xAuthTimestamp + xAuthVersion + authBody
-                signature = self.encode(self.hmac(self.encode(auth), self.encode(self.secret)))
+                signature = self.hmac(self.encode(auth), self.encode(self.secret))
                 headers['X-Auth-Signature'] = signature
         return {'url': url, 'method': method, 'body': body, 'headers': headers}
 

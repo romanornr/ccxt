@@ -2,7 +2,7 @@
 
 # -----------------------------------------------------------------------------
 
-__version__ = '1.25.33'
+__version__ = '1.27.10'
 
 # -----------------------------------------------------------------------------
 
@@ -294,3 +294,6 @@ class Exchange(BaseExchange):
 
     async def fetch_ticker(self, symbol, params={}):
         raise NotSupported('fetch_ticker() not supported yet')
+
+    async def sleep(self, milliseconds):
+        return await asyncio.sleep(milliseconds / 1000)

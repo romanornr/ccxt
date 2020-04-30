@@ -12,7 +12,7 @@ use \ccxt\ArgumentsRequired;
 class bitz extends Exchange {
 
     public function describe() {
-        return array_replace_recursive(parent::describe (), array(
+        return $this->deep_extend(parent::describe (), array(
             'id' => 'bitz',
             'name' => 'Bit-Z',
             'countries' => array( 'HK' ),
@@ -653,7 +653,7 @@ class bitz extends Exchange {
             }
         } else {
             if ($since !== null) {
-                throw new ExchangeError($this->id . ' fetchOHLCV requires a $limit argument if the $since argument is specified');
+                throw new ArgumentsRequired($this->id . ' fetchOHLCV requires a $limit argument if the $since argument is specified');
             }
         }
         $response = $this->marketGetKline (array_merge($request, $params));
@@ -773,6 +773,7 @@ class bitz extends Exchange {
             'trades' => null,
             'fee' => null,
             'info' => $order,
+            'average' => null,
         );
     }
 

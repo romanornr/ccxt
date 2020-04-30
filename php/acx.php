@@ -11,7 +11,7 @@ use \ccxt\OrderNotFound;
 class acx extends Exchange {
 
     public function describe() {
-        return array_replace_recursive(parent::describe (), array(
+        return $this->deep_extend(parent::describe (), array(
             'id' => 'acx',
             'name' => 'ACX',
             'countries' => array( 'AU' ),
@@ -136,6 +136,8 @@ class acx extends Exchange {
                 'quoteId' => $quoteId,
                 'precision' => $precision,
                 'info' => $market,
+                'active' => null,
+                'limits' => $this->limits,
             );
         }
         return $result;
@@ -342,6 +344,8 @@ class acx extends Exchange {
             'trades' => null,
             'fee' => null,
             'info' => $order,
+            'cost' => null,
+            'average' => null,
         );
     }
 

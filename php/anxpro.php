@@ -12,7 +12,7 @@ use \ccxt\NotSupported;
 class anxpro extends Exchange {
 
     public function describe() {
-        return array_replace_recursive(parent::describe (), array(
+        return $this->deep_extend(parent::describe (), array(
             'id' => 'anxpro',
             'name' => 'ANXPro',
             'countries' => array( 'JP', 'SG', 'HK', 'NZ' ),
@@ -472,6 +472,7 @@ class anxpro extends Exchange {
             'cost' => $cost,
             'fee' => null,
             'info' => $trade,
+            'takerOrMaker' => null,
         );
     }
 
@@ -993,6 +994,7 @@ class anxpro extends Exchange {
             'fee' => null,
             'trades' => $trades,
             'info' => $order,
+            'average' => null,
         );
     }
 
@@ -1085,6 +1087,7 @@ class anxpro extends Exchange {
             'status' => $status,
             'fee' => $fee,
             'trades' => $trades,
+            'average' => null,
         );
     }
 

@@ -633,7 +633,7 @@ class bitz(Exchange):
                 request['to'] = self.sum(since, limit * duration * 1000)
         else:
             if since is not None:
-                raise ExchangeError(self.id + ' fetchOHLCV requires a limit argument if the since argument is specified')
+                raise ArgumentsRequired(self.id + ' fetchOHLCV requires a limit argument if the since argument is specified')
         response = self.marketGetKline(self.extend(request, params))
         #
         #     {   status:    200,
@@ -740,6 +740,7 @@ class bitz(Exchange):
             'trades': None,
             'fee': None,
             'info': order,
+            'average': None,
         }
 
     def create_order(self, symbol, type, side, amount, price=None, params={}):

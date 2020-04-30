@@ -10,7 +10,7 @@ use Exception; // a common import
 class independentreserve extends Exchange {
 
     public function describe() {
-        return array_replace_recursive(parent::describe (), array(
+        return $this->deep_extend(parent::describe (), array(
             'id' => 'independentreserve',
             'name' => 'Independent Reserve',
             'countries' => array( 'AU', 'NZ' ), // Australia, New Zealand
@@ -99,6 +99,9 @@ class independentreserve extends Exchange {
                     'baseId' => $baseId,
                     'quoteId' => $quoteId,
                     'info' => $id,
+                    'active' => null,
+                    'precision' => $this->precision,
+                    'limits' => $this->limits,
                 );
             }
         }
@@ -262,6 +265,7 @@ class independentreserve extends Exchange {
             'remaining' => $remaining,
             'status' => $status,
             'fee' => $fee,
+            'trades' => null,
         );
     }
 

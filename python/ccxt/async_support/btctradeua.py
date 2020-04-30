@@ -20,6 +20,7 @@ class btctradeua(Exchange):
                 'CORS': False,
                 'createMarketOrder': False,
                 'fetchOpenOrders': True,
+                'signIn': True,
             },
             'urls': {
                 'referral': 'https://btc-trade.com.ua/registration/22689',
@@ -303,6 +304,9 @@ class btctradeua(Exchange):
             'remaining': self.safe_float(order, 'amnt_trade'),
             'trades': None,
             'info': order,
+            'cost': None,
+            'average': None,
+            'fee': None,
         }
 
     async def fetch_open_orders(self, symbol=None, since=None, limit=None, params={}):

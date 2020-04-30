@@ -15,7 +15,7 @@ use \ccxt\OrderNotFound;
 class bitfinex2 extends bitfinex {
 
     public function describe() {
-        return array_replace_recursive(parent::describe (), array(
+        return $this->deep_extend(parent::describe (), array(
             'id' => 'bitfinex2',
             'name' => 'Bitfinex',
             'countries' => array( 'VG' ),
@@ -705,7 +705,9 @@ class bitfinex2 extends bitfinex {
             'PARTIALLY FILLED' => 'open',
             'EXECUTED' => 'closed',
             'CANCELED' => 'canceled',
+            'CANCELED was => PARTIALLY FILLED' => 'canceled',
             'INSUFFICIENT MARGIN' => 'canceled',
+            'INSUFFICIENT BALANCE (G1) was => PARTIALLY FILLED' => 'canceled',
             'RSN_DUST' => 'rejected',
             'RSN_PAUSE' => 'rejected',
         );

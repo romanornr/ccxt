@@ -11,7 +11,7 @@ use \ccxt\ExchangeError;
 class btcbox extends Exchange {
 
     public function describe() {
-        return array_replace_recursive(parent::describe (), array(
+        return $this->deep_extend(parent::describe (), array(
             'id' => 'btcbox',
             'name' => 'BtcBox',
             'countries' => array( 'JP' ),
@@ -308,6 +308,7 @@ class btcbox extends Exchange {
             'trades' => $trades,
             'fee' => null,
             'info' => $order,
+            'average' => null,
         );
     }
 

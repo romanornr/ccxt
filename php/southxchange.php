@@ -10,7 +10,7 @@ use Exception; // a common import
 class southxchange extends Exchange {
 
     public function describe() {
-        return array_replace_recursive(parent::describe (), array(
+        return $this->deep_extend(parent::describe (), array(
             'id' => 'southxchange',
             'name' => 'SouthXchange',
             'countries' => array( 'AR' ), // Argentina
@@ -88,6 +88,8 @@ class southxchange extends Exchange {
                 'quoteId' => $quoteId,
                 'active' => null,
                 'info' => $market,
+                'precision' => $this->precision,
+                'limits' => $this->limits,
             );
         }
         return $result;
@@ -262,6 +264,8 @@ class southxchange extends Exchange {
             'remaining' => $remaining,
             'status' => $status,
             'fee' => null,
+            'average' => null,
+            'trades' => null,
         );
         return $result;
     }

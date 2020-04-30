@@ -770,6 +770,7 @@ module.exports = class hollaex extends Exchange {
             'trades': undefined,
             'fee': undefined,
             'info': order,
+            'average': undefined,
         };
         return result;
     }
@@ -806,7 +807,7 @@ module.exports = class hollaex extends Exchange {
     async cancelOrder (id, symbol = undefined, params = {}) {
         await this.loadMarkets ();
         const request = {
-            'orderId': id,
+            'order_id': id,
         };
         const response = await this.privateDeleteUserOrdersOrderId (this.extend (request, params));
         //

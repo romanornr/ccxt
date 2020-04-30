@@ -10,7 +10,7 @@ use Exception; // a common import
 class lykke extends Exchange {
 
     public function describe() {
-        return array_replace_recursive(parent::describe (), array(
+        return $this->deep_extend(parent::describe (), array(
             'id' => 'lykke',
             'name' => 'Lykke',
             'countries' => array( 'CH' ),
@@ -257,6 +257,8 @@ class lykke extends Exchange {
                         'max' => null,
                     ),
                 ),
+                'baseId' => null,
+                'quoteId' => null,
             );
         }
         return $result;
@@ -375,6 +377,7 @@ class lykke extends Exchange {
             'remaining' => $remaining,
             'status' => $status,
             'fee' => null,
+            'trades' => null,
         );
     }
 

@@ -5,6 +5,7 @@
 
 from ccxt.async_support.base.exchange import Exchange
 from ccxt.base.errors import ExchangeError
+from ccxt.base.errors import ArgumentsRequired
 from ccxt.base.errors import InsufficientFunds
 from ccxt.base.errors import OrderNotFound
 
@@ -156,6 +157,9 @@ class tidebit(Exchange):
                 'baseId': baseId,
                 'quoteId': quoteId,
                 'info': market,
+                'active': None,
+                'precision': self.precision,
+                'limits': self.limits,
             })
         return result
 
@@ -392,6 +396,7 @@ class tidebit(Exchange):
             'trades': None,
             'fee': None,
             'info': order,
+            'average': None,
         }
 
     async def create_order(self, symbol, type, side, amount, price=None, params={}):
@@ -426,7 +431,7 @@ class tidebit(Exchange):
         currency = self.currency(code)
         id = self.safe_string(params, 'id')
         if id is None:
-            raise ExchangeError(self.id + ' withdraw() requires an extra `id` param(withdraw account id according to withdraws/bind_account_list endpoint')
+            raise ArgumentsRequired(self.id + ' withdraw() requires an extra `id` param(withdraw account id according to withdraws/bind_account_list endpoint')
         request = {
             'id': id,
             'currency_type': 'coin',  # or 'cash'

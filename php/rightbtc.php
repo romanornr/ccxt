@@ -13,7 +13,7 @@ use \ccxt\OrderNotFound;
 class rightbtc extends Exchange {
 
     public function describe() {
-        return array_replace_recursive(parent::describe (), array(
+        return $this->deep_extend(parent::describe (), array(
             'id' => 'rightbtc',
             'name' => 'RightBTC',
             'countries' => array( 'AE' ),
@@ -563,6 +563,7 @@ class rightbtc extends Exchange {
             'status' => $status,
             'fee' => $fee,
             'trades' => $trades,
+            'average' => null,
         );
     }
 

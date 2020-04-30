@@ -7,12 +7,13 @@ namespace ccxt;
 
 use Exception; // a common import
 use \ccxt\ExchangeError;
+use \ccxt\ArgumentsRequired;
 use \ccxt\OrderNotFound;
 
 class tidebit extends Exchange {
 
     public function describe() {
-        return array_replace_recursive(parent::describe (), array(
+        return $this->deep_extend(parent::describe (), array(
             'id' => 'tidebit',
             'name' => 'TideBit',
             'countries' => array( 'HK' ),
@@ -160,6 +161,9 @@ class tidebit extends Exchange {
                 'baseId' => $baseId,
                 'quoteId' => $quoteId,
                 'info' => $market,
+                'active' => null,
+                'precision' => $this->precision,
+                'limits' => $this->limits,
             );
         }
         return $result;
@@ -420,6 +424,7 @@ class tidebit extends Exchange {
             'trades' => null,
             'fee' => null,
             'info' => $order,
+            'average' => null,
         );
     }
 
@@ -459,7 +464,7 @@ class tidebit extends Exchange {
         $currency = $this->currency($code);
         $id = $this->safe_string($params, 'id');
         if ($id === null) {
-            throw new ExchangeError($this->id . ' withdraw() requires an extra `$id` param (withdraw account $id according to withdraws/bind_account_list endpoint');
+            throw new ArgumentsRequired($this->id . ' withdraw() requires an extra `$id` param (withdraw account $id according to withdraws/bind_account_list endpoint');
         }
         $request = array(
             'id' => $id,

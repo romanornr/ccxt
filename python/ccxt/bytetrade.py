@@ -57,10 +57,16 @@ class bytetrade(Exchange):
                 '1M': '1M',
             },
             'urls': {
-                'test': 'https://api-v2-test.bytetrade.com',
+                'test': {
+                    'market': 'https://api-v2-test.byte-trade.com',
+                    'public': 'https://api-v2-test.byte-trade.com',
+                },
                 'logo': 'https://user-images.githubusercontent.com/1294454/67288762-2f04a600-f4e6-11e9-9fd6-c60641919491.jpg',
-                'api': 'https://api-v2.bytetrade.com',
-                'www': 'https://www.bytetrade.com',
+                'api': {
+                    'market': 'https://api-v2.bytetrade.com',
+                    'public': 'https://api-v2.bytetrade.com',
+                },
+                'www': 'https://www.byte-trade.com',
                 'doc': 'https://github.com/Bytetrade/bytetrade-official-api-docs/wiki',
             },
             'api': {
@@ -125,7 +131,7 @@ class bytetrade(Exchange):
             else:
                 code = self.safe_string(currency, 'name')
             name = self.safe_string(currency, 'fullname')
-            # in bytetrade.com DEX, request https://api-v2.bytetrade.com/currencies will return currencies,
+            # in byte-trade.com DEX, request https://api-v2.byte-trade.com/currencies will return currencies,
             # the api doc is https://github.com/Bytetrade/bytetrade-official-api-docs/wiki/rest-api#get-currencies-get-currencys-supported-in-bytetradecom
             # we can see the coin name is none-unique in the result, the coin which code is 18 is the CyberMiles ERC20, and the coin which code is 35 is the CyberMiles main chain, but their name is same.
             # that is because bytetrade is a DEX, supports people create coin with the same name, but the id(code) of coin is unique, so we should use the id or name and id as the identity of coin.
@@ -527,6 +533,7 @@ class bytetrade(Exchange):
             'remaining': remaining,
             'status': status,
             'fee': fee,
+            'trades': None,
         }
 
     def create_order(self, symbol, type, side, amount, price=None, params={}):
@@ -696,6 +703,8 @@ class bytetrade(Exchange):
             'cost': None,
             'trades': None,
             'fee': None,
+            'clientOrderId': None,
+            'average': None,
         }
 
     def fetch_order(self, id, symbol=None, params={}):
@@ -854,6 +863,8 @@ class bytetrade(Exchange):
             'cost': None,
             'trades': None,
             'fee': None,
+            'clientOrderId': None,
+            'average': None,
         }
 
     def transfer(self, code, amount, address, message='', params={}):
@@ -955,6 +966,9 @@ class bytetrade(Exchange):
             'remaining': None,
             'cost': None,
             'fee': None,
+            'clientOrderId': None,
+            'average': None,
+            'trades': None,
         }
 
     def fetch_my_trades(self, symbol=None, since=None, limit=None, params={}):
@@ -1136,7 +1150,7 @@ class bytetrade(Exchange):
                 self.number_to_le(len(address), 1),
                 self.encode(address),
                 self.number_to_le(int(coinId), 4),
-                self.number_to_le(int(math.floor(int(float(self.integer_divide(amountChain, eightBytes))))), 8),
+                self.number_to_le(self.integer_divide(amountChain, eightBytes), 8),
                 self.number_to_le(self.integer_modulo(amountChain, eightBytes), 8),
                 self.number_to_le(1, 1),
                 self.number_to_le(self.integer_divide(assetFee, eightBytes), 8),
@@ -1169,7 +1183,7 @@ class bytetrade(Exchange):
                 self.number_to_le(len(middleAddress), 1),
                 self.encode(middleAddress),
                 self.number_to_le(int(coinId), 4),
-                self.number_to_le(int(math.floor(int(float(self.integer_divide(amountChain, eightBytes))))), 8),
+                self.number_to_le(self.integer_divide(amountChain, eightBytes), 8),
                 self.number_to_le(self.integer_modulo(amountChain, eightBytes), 8),
                 self.number_to_le(0, 1),
                 self.number_to_le(1, 1),
@@ -1268,7 +1282,7 @@ class bytetrade(Exchange):
         }
 
     def sign(self, path, api='public', method='GET', params={}, headers=None, body=None):
-        url = self.urls['api']
+        url = self.urls['api'][api]
         url += '/' + path
         if params:
             url += '?' + self.urlencode(params)

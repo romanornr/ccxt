@@ -13,7 +13,7 @@ use \ccxt\OrderNotFound;
 class kkex extends Exchange {
 
     public function describe() {
-        return array_replace_recursive(parent::describe (), array(
+        return $this->deep_extend(parent::describe (), array(
             'id' => 'kkex',
             'name' => 'KKEX',
             'countries' => array( 'CN', 'US', 'JP' ),
@@ -461,6 +461,7 @@ class kkex extends Exchange {
             'remaining' => $remaining,
             'fee' => null,
             'info' => $order,
+            'trades' => null,
         );
     }
 
@@ -509,6 +510,8 @@ class kkex extends Exchange {
             'remaining' => null,
             'trades' => null,
             'fee' => null,
+            'clientOrderId' => null,
+            'average' => null,
         );
     }
 

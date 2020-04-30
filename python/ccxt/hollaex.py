@@ -734,6 +734,7 @@ class hollaex(Exchange):
             'trades': None,
             'fee': None,
             'info': order,
+            'average': None,
         }
         return result
 
@@ -767,7 +768,7 @@ class hollaex(Exchange):
     def cancel_order(self, id, symbol=None, params={}):
         self.load_markets()
         request = {
-            'orderId': id,
+            'order_id': id,
         }
         response = self.privateDeleteUserOrdersOrderId(self.extend(request, params))
         #
