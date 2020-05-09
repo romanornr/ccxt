@@ -18,3 +18,20 @@ const log       = require ('ololog').configure ({ locate: false })
     let order = await exchange.cancelOrder(id, symbol, params)
     console.log (order)
 }) ()
+
+
+// (async function() {
+//     const exchange = new ccxt.btse ({
+//         'apiKey': 'MjIyOGU1NDAyOWVkNDI4Njg1ZWVjMzMwY2E1YzZhOTQ=',
+//         'secret': 'M2I5NTMzZGE4MGViNDIy',
+//         options: { defaultType: 'future' },
+//     });
+
+//     const symbol = 'BTCPFC'; // edit here
+//     const id = 'cc742899-2587-4dcf-95b7-8f6d1259d6c8' // edit here
+
+//     const params = {}        // edit here
+
+//     let order = await exchange.cancelOrder(id, symbol, params)
+//     console.log (order)
+// }) ()

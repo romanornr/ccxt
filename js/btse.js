@@ -511,7 +511,15 @@ module.exports = class btse extends Exchange {
             'symbol': market['symbol'],
             'orderID': id,
         };
-        const response = await this.spotv3privateDeleteOrder (this.extend (request, params));
+
+        const defaultType = this.safeString2 (this.options, 'DeleteOrder', 'defaultType', 'spot');
+        const type = this.safeString (params, 'type', defaultType);
+        const method = (type === 'spot') ? 'spotv3privateDeleteOrder' : 'futuresv2privateDeleteOrder';
+        const response = await this[method] (this.extend (request, params));
+
+        console.log (response);
+
+        // const response = await this.spotv3privateDeleteOrder (this.extend (request, params));
         const order = this.safeValue (response[0], 'orderID');
         if (order === undefined) {
             console.log ('err order undefined');
@@ -563,7 +571,7 @@ module.exports = class btse extends Exchange {
     sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body = undefined) {
         let url = this.urls['api'][api] + '/' + this.implodeParams (path, params);
         let bodyText = undefined;
-        if (method === 'GET') {
+        if (method === 'GET' || method === 'DELETE') {
             if (Object.keys (params).length) {
                 url += '?' + this.urlencode (params);
             }
@@ -571,11 +579,18 @@ module.exports = class btse extends Exchange {
         if (api === 'spotv3private') {
             this.checkRequiredCredentials ();
             bodyText = JSON.stringify (params);
+            console.log (url);
+            console.log (bodyText);
             const signaturePath = this.cleanSignaturePath (this.urls['api'][api] + "/" + path);
             const nonce = new Date().getTime() + "";
-            const signature = (method === 'GET')
-                ? this.createSignature (this.secret, nonce, signaturePath)
-                : this.createSignature (this.secret, nonce, signaturePath, bodyText);
+            let signature = undefined;
+            if (method === 'GET' || method === 'DELETE'){
+
+                signature = this.createSignature (this.secret, nonce, signaturePath)
+            }
+            else{
+                signature = this.createSignature (this.secret, nonce, signaturePath, bodyText);
+            }
             headers['btse-nonce'] = nonce;
             headers['btse-api'] = this.apiKey;
             headers['btse-sign'] = signature;
@@ -587,9 +602,14 @@ module.exports = class btse extends Exchange {
                 bodyText = JSON.stringify (params);
                 const signaturePath = this.cleanSignaturePathFutures (this.urls['api'][api] + "/" + path);
                 const nonce = new Date().getTime() + "";
-                const signature = (method === 'GET')
-                    ? this.createSignature (this.secret, nonce, signaturePath)
-                    : this.createSignature (this.secret, nonce, signaturePath, bodyText);
+                let signature = undefined;
+                if (method === 'GET' || method === 'DELETE'){
+
+                    signature = this.createSignature (this.secret, nonce, signaturePath)
+                }
+                else{
+                    signature = this.createSignature (this.secret, nonce, signaturePath, bodyText);
+                }
                 headers['btse-nonce'] = nonce;
                 headers['btse-api'] = this.apiKey;
                 headers['btse-sign'] = signature;
