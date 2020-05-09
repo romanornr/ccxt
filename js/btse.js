@@ -50,6 +50,7 @@ module.exports = class btse extends Exchange {
                     'spotv3': 'https://api.btse.com/spot/api/v3.1',
                     'spotv3private': 'https://api.btse.com/spot/api/v3.1',
                     'futuresv2': 'https://api.btse.com/futures/api/v2.1',
+                    'futuresv2private': 'https://api.btse.com/futures/api/v2.1',
                     'testnet': 'https://testapi.btse.io',
                 },
                 'www': 'https://www.btse.com',
@@ -81,22 +82,19 @@ module.exports = class btse extends Exchange {
                         'account',
                         'ohlcv',
                     ],
-                    'post': [
-                        'order',
-                        'deleteOrder',
-                        'fills',
-                    ],
                 },
                 'spotv3private': {
                     'get': [
-                        'pending',
-                        'user/wallet',
+                        'user/fees',
                         'user/open_orders',
+                        'user/trade_history',
+                        'user/wallet',
+                        'user/wallet_history',
                     ],
                     'post': [
                         'order',
-                        'deleteOrder',
-                        'fills',
+                        'order/peg',
+                        '/order/cancelAllAfter',
                     ],
                     'delete': [
                         'order',
@@ -109,6 +107,28 @@ module.exports = class btse extends Exchange {
                         'orderbook/L2',
                         'ohlcv',
                         'trades',
+                    ],
+                },
+                'futuresv2private': {
+                    'get': [
+                        'user/fees',
+                        'user/open_orders',
+                        'user/positions',
+                        'user/trade_history',
+                        'user/wallet',
+                        'user/wallet_history',
+                    ],
+                    'post': [
+                        'user/wallet_transfer',
+                        'order',
+                        'order/peg',
+                        'order/close_position',
+                        'order/cancelAllAfter',
+                        'leverage',
+                        'risk_limit',
+                    ],
+                    'delete': [
+                        'order',
                     ],
                 },
             },
@@ -508,10 +528,18 @@ module.exports = class btse extends Exchange {
         const market = this.market (symbol)
         const request = {
             'symbol': market['id'],
-            'orderID': orderId,
-            // 'clOrderID': '',
         };
-        const response = await this.spotv3privateGetUserOpenOrders (this.extend (request, params));
+
+        if (orderId !== undefined) {
+            request['orderID'] = orderId;
+        } 
+
+        const defaultType = this.safeString2 (this.options, 'GetUserOpenOrders', 'defaultType', 'spot');
+        const type = this.safeString (params, 'type', defaultType);
+        const method = (type === 'spot') ? 'spotv3privateGetUserOpenOrders' : 'futuresv2privateGetUserOpenOrders';
+        const response = await this[method] (this.extend (request, params));
+        
+        //const response = await this.spotv3privateGetUserOpenOrders (this.extend (request, params));
         console.log (response);
 
         // TODO fix 400 giving request
@@ -543,9 +571,8 @@ module.exports = class btse extends Exchange {
         if (api === 'spotv3private') {
             this.checkRequiredCredentials ();
             bodyText = JSON.stringify (params);
-            const signaturePath = this.cleanSignaturePath (url);
-            console.log (signaturePath);
-            const nonce = this.nonce ().toString ();
+            const signaturePath = this.cleanSignaturePath (this.urls['api'][api] + "/" + path);
+            const nonce = new Date().getTime() + "";
             const signature = (method === 'GET')
                 ? this.createSignature (this.secret, nonce, signaturePath)
                 : this.createSignature (this.secret, nonce, signaturePath, bodyText);
@@ -554,16 +581,35 @@ module.exports = class btse extends Exchange {
             headers['btse-sign'] = signature;
             headers['Content-Type'] = 'application/json';
         }
+        else {
+            if (api === 'futuresv2private'){
+                this.checkRequiredCredentials ();
+                bodyText = JSON.stringify (params);
+                const signaturePath = this.cleanSignaturePathFutures (this.urls['api'][api] + "/" + path);
+                const nonce = new Date().getTime() + "";
+                const signature = (method === 'GET')
+                    ? this.createSignature (this.secret, nonce, signaturePath)
+                    : this.createSignature (this.secret, nonce, signaturePath, bodyText);
+                headers['btse-nonce'] = nonce;
+                headers['btse-api'] = this.apiKey;
+                headers['btse-sign'] = signature;
+                headers['Content-Type'] = 'application/json';
+            }
+        }
         body = (method === 'GET') ? null : bodyText;
         return { 'url': url, 'method': method, 'body': body, 'headers': headers };
     }
 
     createSignature (key, nonce, path, body = null) {
+        console.log (path);
         const content = body == null ? this.encode ('/' + path + nonce) : this.encode ('/' + path + nonce + body);
         return this.hmac (content, key, 'sha384');
     }
 
     cleanSignaturePath (url) {
         return url.replace ('https://api.btse.com/spot/', '');
+    }
+    cleanSignaturePathFutures (url) {
+        return url.replace ('https://api.btse.com/futures/', '');
     }
 };
