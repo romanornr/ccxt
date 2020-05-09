@@ -39,7 +39,7 @@ const exchange = new ccxt.btse ({
     'secret': 'OWU2ZGUwZTI1OGE0NGI4',
 });
 
-const symbol = 'BTC-USD'; // edit here
+const symbol = 'BTCPFC'; // edit here
 const type = 'LIMIT';     // edit here
 const side = 'BUY';       // edit here
 const amount = '0.002';         // edit here
@@ -50,3 +50,22 @@ const params = {}        // edit here
     let order = await tryToCreateOrder (exchange, symbol, type, side, amount, price, params)
     console.log (order)
 }) ()
+
+
+// const exchange = new ccxt.btse ({
+//     'apiKey': 'NmU5NjBkODk4ZmNjNDE0MDlhMGM1MmU3OWIxYTY2YjU=',
+//     'secret': 'OWU2ZGUwZTI1OGE0NGI4',
+//     options: { defaultType: 'future' },
+// });
+
+// const symbol = 'BTCPFC'; // edit here
+// const type = 'LIMIT';     // edit here
+// const side = 'BUY';       // edit here
+// const amount = '1';         // edit here
+// const price = '1000';       // edit here
+// const params = {}        // edit here
+
+// ;(async () => {
+//     let order = await tryToCreateOrder (exchange, symbol, type, side, amount, price, params)
+//     console.log (order)
+// }) ()

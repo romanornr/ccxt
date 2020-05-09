@@ -483,18 +483,24 @@ module.exports = class btse extends Exchange {
         };
     }
 
-    async createOrder (symbol, type, side, size, price = undefined, params = {}) {
+    async createOrder (symbol, ordertype, side, size, price = undefined, params = {}) {
         await this.loadMarkets ();
         const market = this.market (symbol)
         const request = {
             'symbol': market['id'],
             'side': side,
             'size': size,
-            'type': type,
+            'type': ordertype,
             'price': price,
             'time_in_force': 'GTC',
         };
-        const response = await this.spotv3privatePostOrder (this.extend (request, params));
+
+        const defaultType = this.safeString2 (this.options, 'PostOrder', 'defaultType', 'spot');
+        const type = this.safeString (params, 'type', defaultType);
+        const method = (type === 'spot') ? 'spotv3privatePostOrder' : 'futuresv2privatePostOrder';
+        const response = await this[method] (this.extend (request, params));
+
+        // const response = await this.spotv3privatePostOrder (this.extend (request, params));
         const order = this.safeValue (response[0], 'orderID');
         if (order === undefined) {
             console.log ('err order undefined');
