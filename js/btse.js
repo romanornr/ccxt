@@ -582,18 +582,17 @@ module.exports = class btse extends Exchange {
                 url += '?' + this.urlencode (params);
             }
         }
-        let signaturePath = undefined;
-        if (api === 'spotv3private') {
+        if (api.includes('private')) {
             this.checkRequiredCredentials ();
             bodyText = JSON.stringify (params);
-            console.log (url);
-            console.log (bodyText);
-            signaturePath = this.cleanSignaturePath (this.urls['api'][api] + '/' + path);
-        } else if (api === 'futuresv2private') {
-            this.checkRequiredCredentials ();
-            bodyText = JSON.stringify (params);
-            signaturePath = this.cleanSignaturePathFutures (this.urls['api'][api] + '/' + path);
+            const signaturePath = this.cleanSignaturePath (api, this.urls['api'][api] + '/' + path);
+            headers = this.signHeaders (headers = {}, signaturePath, bodyText);
         }
+        body = (method === 'GET') ? null : bodyText;
+        return { 'url': url, 'method': method, 'body': body, 'headers': headers };
+    }
+
+    signHeaders (headers, signaturePath, bodyText = undefined) {
         const nonce = this.nonce();
         let signature;
         if (method === 'GET' || method === 'DELETE') {
@@ -605,8 +604,7 @@ module.exports = class btse extends Exchange {
         headers['btse-api'] = this.apiKey;
         headers['btse-sign'] = signature;
         headers['Content-Type'] = 'application/json';
-        body = (method === 'GET') ? null : bodyText;
-        return { 'url': url, 'method': method, 'body': body, 'headers': headers };
+        return headers;
     }
 
     createSignature (key, nonce, path, body = null) {
@@ -615,11 +613,9 @@ module.exports = class btse extends Exchange {
         return this.hmac (content, key, 'sha384');
     }
 
-    cleanSignaturePath (url) {
-        return url.replace ('https://api.btse.com/spot/', '');
-    }
-
-    cleanSignaturePathFutures (url) {
-        return url.replace ('https://api.btse.com/futures/', '');
+    cleanSignaturePath (api, url) {
+        return (api === "spotv3private")
+            ? url.replace ('https://api.btse.com/spot/', '')
+            : url.replace ('https://api.btse.com/futures/', '');
     }
 };
