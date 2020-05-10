@@ -221,31 +221,30 @@ module.exports = class btse extends Exchange {
             'symbol': market['id'],
         };
         const response = await this[method] (this.extend (request, params));
-        return this.parseTicker (response, symbol);
+        return this.parseTicker (response[0]);
     }
 
-    // TODO this def needs a fix
     parseTicker (ticker) {
         return {
-            'symbol': this.safeString (ticker[0], 'symbol'),
+            'symbol': this.safeString (ticker, 'symbol'),
             'timestamp': this.milliseconds (),
-            'high': this.safeFloat2 (ticker[0], 'high24Hr'),
-            'low': this.safeFloat2 (ticker[0], 'low24Hr'),
-            'bid': this.safeFloat (ticker[0], 'highestBid'),
+            'high': this.safeFloat2 (ticker, 'high24Hr'),
+            'low': this.safeFloat2 (ticker, 'low24Hr'),
+            'bid': this.safeFloat (ticker, 'highestBid'),
             'bidVolume': undefined,
-            'ask': this.safeFloat (ticker[0], 'lowestAsk'),
+            'ask': this.safeFloat (ticker, 'lowestAsk'),
             'askVolume': undefined,
             'vwap': undefined,
             'open': undefined,
             'close': undefined,
-            'last': this.safeFloat (ticker[0], 'last'),
+            'last': this.safeFloat (ticker, 'last'),
             'previousClose': undefined,
             'change': undefined,
-            'percentage': this.safeFloat (ticker[0], 'percentageChange'),
+            'percentage': this.safeFloat (ticker, 'percentageChange'),
             'average': undefined,
             'baseVolume': undefined,
-            'quoteVolume': this.safeFloat (ticker[0], 'volume'),
-            'info': ticker[0],
+            'quoteVolume': this.safeFloat (ticker, 'volume'),
+            'info': ticker,
         };
     }
 
@@ -256,7 +255,7 @@ module.exports = class btse extends Exchange {
             'symbol': market['id'],
         };
         if (limit !== undefined) {
-            request['depth'] = limit; // default 100, max 5000, see https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#order-book
+            request['depth'] = limit;
         }
         const defaultType = this.safeString2 (this.options, 'GetOrderBookL2', 'defaultType', 'spot');
         const type = this.safeString (params, 'type', defaultType);
@@ -287,7 +286,7 @@ module.exports = class btse extends Exchange {
         if (limit !== undefined) {
             request['count'] = limit;
         } else {
-            request['count'] = 5;
+            request['count'] = 1;
         }
         // [
         //     {
@@ -309,20 +308,16 @@ module.exports = class btse extends Exchange {
     parseTrade (trade, market) {
         const timestamp = this.safeValue (trade, 'timestamp');
         return {
-            'id': this.safeString (trade, 'serial_id'),
-            'timestamp': timestamp,
-            'info': trade,
-            'datetime': this.iso8601 (timestamp),
+            'id': this.safeString (trade, 'serialId'),
+            'order': this.safeString (trade, 'orderID'),
             'symbol': market['symbol'],
-            'type': this.safeString (trade, 'type'),
             'price': this.safeFloat (trade, 'price'),
             'amount': this.safeFloat (trade, 'size'),
-
-            'takerOrMarker': undefined, // private
-            'cost': undefined, // private
-            'fee': undefined, // private
-            'orderId': this.safeString (trade, 'serialId'),
-            'side': this.safeString (trade, 'side'),
+            'fee': this.safeFloat (trade, 'feeAmount'),
+            'type': undefined,
+            'datetime': this.iso8601 (timestamp),
+            'timestamp': timestamp,
+            'info': trade,
         };
     }
 
