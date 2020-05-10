@@ -4,7 +4,7 @@
 
 const Exchange = require ('./base/Exchange');
 const { TICK_SIZE } = require ('./base/functions/number');
-const { InvalidOrder, OrderNotFound } = require ('./base/errors');
+const { InvalidOrder } = require ('./base/errors');
 // const { } = require ('./base/errors');
 
 module.exports = class btse extends Exchange {
@@ -175,8 +175,7 @@ module.exports = class btse extends Exchange {
         const results = [];
         for (let i = 0; i < response.length; i++) {
             const market = response[i];
-            const future = ('futures' in market);
-            const spot = future;
+            const spot = ('futures' in market);
             const marketType = spot ? 'spot' : 'future';
             const baseId = this.safeString (market, 'base');
             const quoteId = this.safeString (market, 'quote');
@@ -236,10 +235,9 @@ module.exports = class btse extends Exchange {
     }
 
     // TODO this def needs a fix
-    parseTicker (ticker, market = undefined) {
-        const symbol = this.safeString (ticker, 'symbol');
+    parseTicker (ticker) {
         return {
-            'symbol': ticker[0]['symbol'],
+            'symbol': this.safeString (ticker[0], 'symbol'),
             'timestamp': this.milliseconds (),
             'high': this.safeFloat2 (ticker[0], 'high24Hr'),
             'low': this.safeFloat2 (ticker[0], 'low24Hr'),
@@ -576,7 +574,7 @@ module.exports = class btse extends Exchange {
         // TODO needs double check
     }
 
-    sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body = undefined) {
+    sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body) {
         let url = this.urls['api'][api] + '/' + this.implodeParams (path, params);
         let bodyText = undefined;
         if (method === 'GET' || method === 'DELETE') {
@@ -584,41 +582,29 @@ module.exports = class btse extends Exchange {
                 url += '?' + this.urlencode (params);
             }
         }
+        let signaturePath = undefined;
         if (api === 'spotv3private') {
             this.checkRequiredCredentials ();
             bodyText = JSON.stringify (params);
             console.log (url);
             console.log (bodyText);
-            const signaturePath = this.cleanSignaturePath (this.urls['api'][api] + '/' + path);
-            const nonce = new Date ().getTime () + '';
-            let signature = undefined;
-            if (method === 'GET' || method === 'DELETE') {
-                signature = this.createSignature (this.secret, nonce, signaturePath);
-            } else {
-                signature = this.createSignature (this.secret, nonce, signaturePath, bodyText);
-            }
-            headers['btse-nonce'] = nonce;
-            headers['btse-api'] = this.apiKey;
-            headers['btse-sign'] = signature;
-            headers['Content-Type'] = 'application/json';
-        } else {
-            if (api === 'futuresv2private') {
-                this.checkRequiredCredentials ();
-                bodyText = JSON.stringify (params);
-                const signaturePath = this.cleanSignaturePathFutures (this.urls['api'][api] + '/' + path);
-                const nonce = new Date ().getTime () + '';
-                let signature = undefined;
-                if (method === 'GET' || method === 'DELETE') {
-                    signature = this.createSignature (this.secret, nonce, signaturePath);
-                } else {
-                    signature = this.createSignature (this.secret, nonce, signaturePath, bodyText);
-                }
-                headers['btse-nonce'] = nonce;
-                headers['btse-api'] = this.apiKey;
-                headers['btse-sign'] = signature;
-                headers['Content-Type'] = 'application/json';
-            }
+            signaturePath = this.cleanSignaturePath (this.urls['api'][api] + '/' + path);
+        } else if (api === 'futuresv2private') {
+            this.checkRequiredCredentials ();
+            bodyText = JSON.stringify (params);
+            signaturePath = this.cleanSignaturePathFutures (this.urls['api'][api] + '/' + path);
         }
+        const nonce = this.nonce();
+        let signature;
+        if (method === 'GET' || method === 'DELETE') {
+            signature = this.createSignature (this.secret, nonce, signaturePath);
+        } else {
+            signature = this.createSignature (this.secret, nonce, signaturePath, bodyText);
+        }
+        headers['btse-nonce'] = nonce;
+        headers['btse-api'] = this.apiKey;
+        headers['btse-sign'] = signature;
+        headers['Content-Type'] = 'application/json';
         body = (method === 'GET') ? null : bodyText;
         return { 'url': url, 'method': method, 'body': body, 'headers': headers };
     }
