@@ -4,6 +4,7 @@
 
 const Exchange = require ('./base/Exchange');
 const { TICK_SIZE } = require ('./base/functions/number');
+const { InvalidOrder } = require ('./base/errors');
 // const { } = require ('./base/errors');
 
 module.exports = class btse extends Exchange {
@@ -223,7 +224,7 @@ module.exports = class btse extends Exchange {
 
     async fetchTicker (symbol, params = {}) {
         await this.loadMarkets ();
-        const market = this.market (symbol)
+        const market = this.market (symbol);
         const defaultType = this.safeString2 (this.options, 'GetMarketSummary', 'defaultType', 'spot');
         const type = this.safeString (params, 'type', defaultType);
         const method = (type === 'spot') ? 'spotv3GetMarketSummary' : 'futuresv2GetMarketSummary';
@@ -262,7 +263,7 @@ module.exports = class btse extends Exchange {
 
     async fetchOrderBook (symbol, limit = undefined, params = {}) {
         await this.loadMarkets ();
-        const market = this.market (symbol)
+        const market = this.market (symbol);
         const request = {
             'symbol': market['id'],
         };
@@ -483,24 +484,44 @@ module.exports = class btse extends Exchange {
         };
     }
 
-    async createOrder (symbol, ordertype, side, size, price = undefined, params = {}) {
+    async createOrder (symbol, orderType, side, size, price = undefined, params = {}) {
         await this.loadMarkets ();
-        const market = this.market (symbol)
+        const market = this.market (symbol);
         const request = {
-            'symbol': market['id'],
-            'side': side,
-            'size': size,
-            'type': ordertype,
+            'symbol': market['id'].toUpperCase (),
+            'side': side.toUpperCase (),
+            // 'price': 9000, // send null for market orders
+            'size': size.toUpperCase (),
             'price': price,
             'time_in_force': 'GTC',
         };
-
+        let priceToPrecision = undefined;
+        if (price !== undefined) {
+            priceToPrecision = parseFloat (this.priceToPrecision (symbol, price));
+        }
+        switch (orderType.toUpperCase ()) {
+        case 'LIMIT':
+            request['type'] = 'LIMIT';
+            request['price'] = priceToPrecision;
+            break;
+        case 'MARKET':
+            request['type'] = 'MARKET';
+            request['price'] = null;
+            break;
+        case 'STOP':
+            request['txType'] = 'STOP';
+            request['stopPrice'] = priceToPrecision;
+            break;
+        case 'TRAILINGSTOP':
+            request['trailValue'] = priceToPrecision;
+            break;
+        default:
+            throw new InvalidOrder (this.id + ' createOrder () does not support order type ' + orderType + ', only limit, market, stop, trailingStop, or takeProfit orders are supported');
+        }
         const defaultType = this.safeString2 (this.options, 'PostOrder', 'defaultType', 'spot');
         const type = this.safeString (params, 'type', defaultType);
         const method = (type === 'spot') ? 'spotv3privatePostOrder' : 'futuresv2privatePostOrder';
         const response = await this[method] (this.extend (request, params));
-
-        // const response = await this.spotv3privatePostOrder (this.extend (request, params));
         const order = this.safeValue (response[0], 'orderID');
         if (order === undefined) {
             console.log ('err order undefined');
@@ -512,48 +533,36 @@ module.exports = class btse extends Exchange {
     async cancelOrder (id, symbol, params = {}) {
         await this.loadMarkets ();
         const market = this.market (symbol);
-        console.log(market['symbol'])
         const request = {
             'symbol': market['symbol'],
             'orderID': id,
         };
-
         const defaultType = this.safeString2 (this.options, 'DeleteOrder', 'defaultType', 'spot');
         const type = this.safeString (params, 'type', defaultType);
         const method = (type === 'spot') ? 'spotv3privateDeleteOrder' : 'futuresv2privateDeleteOrder';
         const response = await this[method] (this.extend (request, params));
-
-        console.log (response);
-
-        // const response = await this.spotv3privateDeleteOrder (this.extend (request, params));
         const order = this.safeValue (response[0], 'orderID');
         if (order === undefined) {
             console.log ('err order undefined');
             return response;
         }
-        const o = this.parseOrder (response[0])
-        console.log (o);
-        return o;
-        // TODO parseOrder response
+        return this.parseOrder (response[0]);
     }
 
     async fetchOpenOrders (symbol, orderId, params = {}) {
         await this.loadMarkets ();
-        const market = this.market (symbol)
+        const market = this.market (symbol);
         const request = {
             'symbol': market['id'],
         };
-
         if (orderId !== undefined) {
             request['orderID'] = orderId;
-        } 
-
+        }
         const defaultType = this.safeString2 (this.options, 'GetUserOpenOrders', 'defaultType', 'spot');
         const type = this.safeString (params, 'type', defaultType);
         const method = (type === 'spot') ? 'spotv3privateGetUserOpenOrders' : 'futuresv2privateGetUserOpenOrders';
         const response = await this[method] (this.extend (request, params));
-        
-        //const response = await this.spotv3privateGetUserOpenOrders (this.extend (request, params));
+        // const response = await this.spotv3privateGetUserOpenOrders (this.extend (request, params));
         console.log (response);
 
         // TODO fix 400 giving request
@@ -587,33 +596,28 @@ module.exports = class btse extends Exchange {
             bodyText = JSON.stringify (params);
             console.log (url);
             console.log (bodyText);
-            const signaturePath = this.cleanSignaturePath (this.urls['api'][api] + "/" + path);
-            const nonce = new Date().getTime() + "";
+            const signaturePath = this.cleanSignaturePath (this.urls['api'][api] + '/' + path);
+            const nonce = new Date ().getTime () + '';
             let signature = undefined;
-            if (method === 'GET' || method === 'DELETE'){
-
-                signature = this.createSignature (this.secret, nonce, signaturePath)
-            }
-            else{
+            if (method === 'GET' || method === 'DELETE') {
+                signature = this.createSignature (this.secret, nonce, signaturePath);
+            } else {
                 signature = this.createSignature (this.secret, nonce, signaturePath, bodyText);
             }
             headers['btse-nonce'] = nonce;
             headers['btse-api'] = this.apiKey;
             headers['btse-sign'] = signature;
             headers['Content-Type'] = 'application/json';
-        }
-        else {
-            if (api === 'futuresv2private'){
+        } else {
+            if (api === 'futuresv2private') {
                 this.checkRequiredCredentials ();
                 bodyText = JSON.stringify (params);
-                const signaturePath = this.cleanSignaturePathFutures (this.urls['api'][api] + "/" + path);
-                const nonce = new Date().getTime() + "";
+                const signaturePath = this.cleanSignaturePathFutures (this.urls['api'][api] + '/' + path);
+                const nonce = new Date ().getTime () + '';
                 let signature = undefined;
-                if (method === 'GET' || method === 'DELETE'){
-
-                    signature = this.createSignature (this.secret, nonce, signaturePath)
-                }
-                else{
+                if (method === 'GET' || method === 'DELETE') {
+                    signature = this.createSignature (this.secret, nonce, signaturePath);
+                } else {
                     signature = this.createSignature (this.secret, nonce, signaturePath, bodyText);
                 }
                 headers['btse-nonce'] = nonce;
@@ -635,6 +639,7 @@ module.exports = class btse extends Exchange {
     cleanSignaturePath (url) {
         return url.replace ('https://api.btse.com/spot/', '');
     }
+
     cleanSignaturePathFutures (url) {
         return url.replace ('https://api.btse.com/futures/', '');
     }
