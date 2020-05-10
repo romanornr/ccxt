@@ -4,7 +4,7 @@
 
 const Exchange = require ('./base/Exchange');
 const { TICK_SIZE } = require ('./base/functions/number');
-const { InvalidOrder } = require ('./base/errors');
+const { InvalidOrder, OrderNotFound } = require ('./base/errors');
 // const { } = require ('./base/errors');
 
 module.exports = class btse extends Exchange {
@@ -490,9 +490,7 @@ module.exports = class btse extends Exchange {
         const request = {
             'symbol': market['id'].toUpperCase (),
             'side': side.toUpperCase (),
-            // 'price': 9000, // send null for market orders
             'size': size.toUpperCase (),
-            'price': price,
             'time_in_force': 'GTC',
         };
         let priceToPrecision = undefined;
@@ -506,7 +504,7 @@ module.exports = class btse extends Exchange {
             break;
         case 'MARKET':
             request['type'] = 'MARKET';
-            request['price'] = null;
+            // request['price'] = null;
             break;
         case 'STOP':
             request['txType'] = 'STOP';
@@ -562,19 +560,14 @@ module.exports = class btse extends Exchange {
         const type = this.safeString (params, 'type', defaultType);
         const method = (type === 'spot') ? 'spotv3privateGetUserOpenOrders' : 'futuresv2privateGetUserOpenOrders';
         const response = await this[method] (this.extend (request, params));
-        // const response = await this.spotv3privateGetUserOpenOrders (this.extend (request, params));
-        console.log (response);
-
-        // TODO fix 400 giving request
-
-        // TODO parseOrder response
+        return this.parseOrder (response[0]);
     }
 
     async fetchClosedOrders (symbol = undefined, since = undefined, limit = undefined, params = {}) {
         await this.loadMarkets ();
         const market = this.market (symbol);
         const request = {
-            'symbol': market['symbol'].replace ('/', '-'),
+            'symbol': market['id'],
             'before': since,
             'limit': limit,
         };

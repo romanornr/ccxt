@@ -10,7 +10,7 @@ const log       = require ('ololog').configure ({ locate: false })
         'secret': 'M2I5NTMzZGE4MGViNDIy',
     });
 
-    const symbol = 'BTC/USD'; // edit here
+    const symbol = 'BTC-PFC'; // edit here
 
     const params = {}        // edit here
 
