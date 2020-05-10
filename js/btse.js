@@ -173,51 +173,41 @@ module.exports = class btse extends Exchange {
         const method = (type === 'spot') ? 'spotv3GetMarketSummary' : 'futuresv2GetMarketSummary';
         const response = await this[method] (query);
         const results = [];
-        for (let i = 0; i < response.length; i++) {
-            const market = response[i];
-            const spot = ('futures' in market);
-            const marketType = spot ? 'spot' : 'future';
+        response.forEach((market) => {
             const baseId = this.safeString (market, 'base');
             const quoteId = this.safeString (market, 'quote');
             const base = this.safeCurrencyCode (baseId);
             const quote = this.safeCurrencyCode (quoteId);
-            const active = this.safeValue (market, 'active');
-            const symbol = this.safeString (market, 'symbol'); // base + '/' + quote;
-            const id = this.safeValue (market, 'symbol');
-            const sizeIncrement = this.safeFloat (market, 'minSizeIncrement');
-            const priceIncrement = this.safeFloat (market, 'minPriceIncrement');
-            const precision = {
-                'amount': sizeIncrement,
-                'price': priceIncrement,
-            };
             results.push ({
-                'id': id, // needs fix
-                'symbol': symbol,
-                'base': base,
-                'quote': quote,
-                'baseId': baseId,
-                'quoteId': quoteId,
-                'active': active,
-                'precision': precision,
-                'info': market,
-                'type': marketType,
+                'id': this.safeValue (market, 'symbol'),
+                'symbol': `${base}/${quote}`,
+                base,
+                quote,
+                baseId,
+                quoteId,
+                'active': this.safeValue (market, 'active'),
+                'precision': {
+                    'price': this.safeFloat (market, 'minPriceIncrement'),
+                    'amount': this.safeFloat (market, 'minSizeIncrement'),
+                    'cost': undefined,
+                },
                 'limits': {
                     'amount': {
-                        'min': sizeIncrement,
-                        'max': undefined,
+                        'min': this.safeFloat (market, 'minOrderSize'),
+                        'max': this.safeFloat (market, 'maxOrderSize'),
                     },
                     'price': {
-                        'min': priceIncrement,
+                        'min': this.safeFloat (market, 'minValidPrice'),
                         'max': undefined,
                     },
                     'cost': {
                         'min': undefined,
                         'max': undefined,
                     },
-                    // 'spot': true,
                 },
+                'info': market
             });
-        }
+        });
         return results;
     }
 
