@@ -321,19 +321,21 @@ module.exports = class btse extends Exchange {
 
     async fetchBalance (params = {}) {
         await this.loadMarkets ();
-        const response = await this.spotv3privateGetUserWallet (params);
-        const result = {
-            'info': response,
-        };
-        for (let i = 0; i < response.length; i++) {
-            const balance = response[i];
-            const currencyId = this.safeString (balance, 'currency');
-            const code = this.safeCurrencyCode (currencyId);
-            const account = this.account ();
+        const defaultType = this.safeString2 (this.options, 'GetWallet', 'defaultType', 'spot');
+        const type = this.safeString (params, 'type', defaultType);
+        const method = (type === 'spot') ? 'spotv3privateGetUserWallet' : 'futuresv2privateGetUserWallet';
+        const response = await this[method] (this.extend (params));
+        const result = {};
+        // TODO different response parsing for futures
+        response.forEach((balance) => {
+            const code = this.safeCurrencyCode (this.safeString (balance, 'currency'));
+            const account = this.account ()
+            account['total'] = this.safeFloat (balance, 'total');
             account['free'] = this.safeFloat (balance, 'available');
-            account['used'] = this.safeFloat (balance, 'total') - this.safeFloat (balance, 'available');
+            account['used'] = account['total'] - this.safeFloat (balance, 'available');
             result[code] = account;
-        }
+        });
+        result['info'] = response;
         return this.parseBalance (result);
     }
 
@@ -569,13 +571,13 @@ module.exports = class btse extends Exchange {
             this.checkRequiredCredentials ();
             bodyText = JSON.stringify (params);
             const signaturePath = this.cleanSignaturePath (api, this.urls['api'][api] + '/' + path);
-            headers = this.signHeaders (headers = {}, signaturePath, bodyText);
+            headers = this.signHeaders (method, headers, signaturePath, bodyText);
         }
         body = (method === 'GET') ? null : bodyText;
         return { 'url': url, 'method': method, 'body': body, 'headers': headers };
     }
 
-    signHeaders (headers, signaturePath, bodyText = undefined) {
+    signHeaders (method, headers, signaturePath, bodyText = undefined) {
         const nonce = this.nonce();
         let signature;
         if (method === 'GET' || method === 'DELETE') {
@@ -590,8 +592,7 @@ module.exports = class btse extends Exchange {
         return headers;
     }
 
-    createSignature (key, nonce, path, body = null) {
-        console.log (path);
+    createSignature (key, nonce, path, body = undefined) {
         const content = body == null ? this.encode ('/' + path + nonce) : this.encode ('/' + path + nonce + body);
         return this.hmac (content, key, 'sha384');
     }
