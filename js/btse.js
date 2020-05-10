@@ -13,7 +13,7 @@ module.exports = class btse extends Exchange {
             'id': 'btse',
             'name': 'BTSE',
             'countries': ['UAE'],
-            'userAgent': undefined,
+            'userAgent': 'sdk_ccxt/btse',
             'rateLimit': 3000,
             'has': {
                 'CORS': true,
@@ -240,7 +240,7 @@ module.exports = class btse extends Exchange {
         const symbol = this.safeString (ticker, 'symbol');
         return {
             'symbol': ticker[0]['symbol'],
-            'timestamp': undefined, // fixme
+            'timestamp': this.milliseconds (),
             'high': this.safeFloat2 (ticker[0], 'high24Hr'),
             'low': this.safeFloat2 (ticker[0], 'low24Hr'),
             'bid': this.safeFloat (ticker[0], 'highestBid'),
