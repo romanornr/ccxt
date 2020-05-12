@@ -173,7 +173,7 @@ module.exports = class btse extends Exchange {
         const method = (type === 'spot') ? 'spotv3GetMarketSummary' : 'futuresv2GetMarketSummary';
         const response = await this[method] (query);
         const results = [];
-        response.forEach((market) => {
+        response.forEach ((market) => {
             const baseId = this.safeString (market, 'base');
             const quoteId = this.safeString (market, 'quote');
             const base = this.safeCurrencyCode (baseId);
@@ -205,7 +205,7 @@ module.exports = class btse extends Exchange {
                         'max': undefined,
                     },
                 },
-                'info': market
+                'info': market,
             });
         });
         return results;
@@ -327,9 +327,9 @@ module.exports = class btse extends Exchange {
         const response = await this[method] (this.extend (params));
         const result = {};
         // TODO different response parsing for futures
-        response.forEach((balance) => {
+        response.forEach ((balance) => {
             const code = this.safeCurrencyCode (this.safeString (balance, 'currency'));
-            const account = this.account ()
+            const account = this.account ();
             account['total'] = this.safeFloat (balance, 'total');
             account['free'] = this.safeFloat (balance, 'available');
             account['used'] = account['total'] - this.safeFloat (balance, 'available');
@@ -371,23 +371,23 @@ module.exports = class btse extends Exchange {
             priceToPrecision = parseFloat (this.priceToPrecision (symbol, price));
         }
         switch (orderType.toUpperCase ()) {
-            case 'LIMIT':
-                request['type'] = 'LIMIT';
-                request['txType'] = 'LIMIT';
-                request['price'] = priceToPrecision;
-                break;
-            case 'MARKET':
-                request['type'] = 'MARKET';
-                break;
-            case 'STOP':
-                request['txType'] = 'STOP';
-                request['stopPrice'] = priceToPrecision;
-                break;
-            case 'TRAILINGSTOP':
-                request['trailValue'] = priceToPrecision;
-                break;
-            default:
-                throw new InvalidOrder (this.id + ' createOrder () does not support order type ' + orderType + ', only limit, market, stop, trailingStop, or takeProfit orders are supported');
+        case 'LIMIT':
+            request['type'] = 'LIMIT';
+            request['txType'] = 'LIMIT';
+            request['price'] = priceToPrecision;
+            break;
+        case 'MARKET':
+            request['type'] = 'MARKET';
+            break;
+        case 'STOP':
+            request['txType'] = 'STOP';
+            request['stopPrice'] = priceToPrecision;
+            break;
+        case 'TRAILINGSTOP':
+            request['trailValue'] = priceToPrecision;
+            break;
+        default:
+            throw new InvalidOrder (this.id + ' createOrder () does not support order type ' + orderType + ', only limit, market, stop, trailingStop, or takeProfit orders are supported');
         }
         const defaultType = this.safeString2 (this.options, 'PostOrder', 'defaultType', 'spot');
         const type = this.safeString (params, 'type', defaultType);
@@ -409,7 +409,7 @@ module.exports = class btse extends Exchange {
         const method = (type === 'spot') ? 'spotv3privateDeleteOrder' : 'futuresv2privateDeleteOrder';
         const response = await this[method] (this.extend (request, params));
         if (response[0].message === 'ALL_ORDER_CANCELLED_SUCCESS') {
-            return response[0]
+            return response[0];
         }
         return this.parseOrder (response[0]);
     }
@@ -422,13 +422,13 @@ module.exports = class btse extends Exchange {
         };
         if (symbol !== undefined) {
             // TODO that part works but the call is INSANELY slow
-            return this.cancelOrder(undefined, symbol);
+            return this.cancelOrder (undefined, symbol);
         }
         const defaultType = this.safeString2 (this.options, 'OrderCancelAllAfter', 'defaultType', 'spot');
         const type = this.safeString (params, 'type', defaultType);
         const method = (type === 'spot') ? 'spotv3privatePostOrderCancelAllAfter' : 'futuresv2privatePostOrderCancelAllAfter';
         const response = await this[method] (this.extend (request, params));
-        return this.safeValue(response, 'result', {});
+        return this.safeValue (response, 'result', {});
     }
 
     parseOrderStatus (status) {
@@ -454,12 +454,11 @@ module.exports = class btse extends Exchange {
         return this.safeString (types, type, type);
     }
 
-    findSymbol(marketId, market) {
+    findSymbol (marketId, market) {
         if (market === undefined) {
             if (marketId in this.markets_by_id) {
                 market = this.markets_by_id[marketId];
-            }
-            else {
+            } else {
                 return marketId;
             }
         }
@@ -535,7 +534,7 @@ module.exports = class btse extends Exchange {
                 url += '?' + this.urlencode (params);
             }
         }
-        if (api.includes('private')) {
+        if (api.includes ('private')) {
             this.checkRequiredCredentials ();
             bodyText = JSON.stringify (params);
             const signaturePath = this.cleanSignaturePath (api, this.urls['api'][api] + '/' + path);
@@ -546,7 +545,8 @@ module.exports = class btse extends Exchange {
     }
 
     signHeaders (method, headers, signaturePath, bodyText = undefined) {
-        const nonce = this.nonce();
+        const nonce = this.nonce ();
+        // eslint-disable-next-line init-declarations
         let signature;
         if (method === 'GET' || method === 'DELETE') {
             signature = this.createSignature (this.secret, nonce, signaturePath);
@@ -566,7 +566,7 @@ module.exports = class btse extends Exchange {
     }
 
     cleanSignaturePath (api, url) {
-        return (api === "spotv3private")
+        return (api === 'spotv3private')
             ? url.replace ('https://api.btse.com/spot/', '')
             : url.replace ('https://api.btse.com/futures/', '');
     }
