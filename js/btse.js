@@ -485,12 +485,12 @@ module.exports = class btse extends Exchange {
             'symbol': this.findSymbol (this.safeString (order, 'symbol'), market),
             'type': this.parseOrderType (this.safeString (order, 'orderType')),
             'side': this.safeString (order, 'side'),
-            'price': price,
-            'amount': amount,
-            'cost': cost,
-            'average': average,
-            'filled': filled,
-            'remaining': remaining,
+            price,
+            amount,
+            cost,
+            average,
+            filled,
+            remaining,
             'status': this.parseOrderStatus (this.safeString (order, 'status')), // TODO they seem to have inconsistencies between orderState and status in between calls involving orders
             'fee': undefined,
             'trades': undefined,
@@ -520,7 +520,7 @@ module.exports = class btse extends Exchange {
         const request = {
             'symbol': market['id'],
             'before': since,
-            'limit': limit,
+            limit,
         };
         const orders = await this.spotv2privatePostFills (this.extend (request, params));
         return this.filterBy (orders, 'status', 'closed');
