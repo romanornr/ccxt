@@ -330,19 +330,23 @@ module.exports = class btse extends Exchange {
         };
     }
 
+    // [ { username: 'RNR_0',
+    //     orderId: '20191115001062',
+    //     wallet: 'SPOT@',
+    //     currency: 'TUSD',
+    //     type: 'Deposit',
+    //     amount: 3.89,
+    //     fees: 0,
+    //     description: '',
+    //     timestamp: 1573782067003,
+    //     status: 'Completed' } ]
     async fetchDeposits (code = undefined, since = undefined, limit = undefined, params = {}) {
         await this.loadMarkets ();
         const defaultType = this.safeString2 (this.options, 'GetWalletHistory', 'defaultType', 'spot');
         const type = this.safeString (params, 'type', defaultType);
         const method = (type === 'spot') ? 'spotv3privateGetUserWalletHistory' : 'futuresv2privateGetUserWalletHistory';
         const response = await this[method] (this.extend (params));
-        const deposits = [];
-        response.forEach ((response) => {
-            if (response['type'] === 'Deposit') {
-                deposits.push (response);
-            }
-        });
-        return deposits;
+        return response.filter ((response) => response['type'] === 'Deposit');
     }
 
     async fetchBalance (params = {}) {
