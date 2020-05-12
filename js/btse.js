@@ -12,7 +12,7 @@ module.exports = class btse extends Exchange {
         return this.deepExtend (super.describe (), {
             'id': 'btse',
             'name': 'BTSE',
-            'countries': ['UAE'],
+            'countries': ['BVI'],
             'userAgent': 'sdk_ccxt/btse',
             'rateLimit': 3000,
             'has': {
