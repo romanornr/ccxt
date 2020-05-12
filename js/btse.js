@@ -137,8 +137,8 @@ module.exports = class btse extends Exchange {
                 'trading': {
                     'tierBased': false,
                     'percentage': true,
-                    'taker': 0.060,
-                    'maker': 0.0,
+                    'maker': 0.05,
+                    'taker': 0.10,
                 },
             },
             'exceptions': {},
