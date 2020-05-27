@@ -102,6 +102,7 @@ module.exports = class btse extends Exchange {
                         'user/trade_history',
                         'user/wallet',
                         'user/wallet_history',
+                        'wallet/address',
                     ],
                     'post': [
                         'order',
@@ -554,6 +555,19 @@ module.exports = class btse extends Exchange {
         const orders = await this.spotv2privatePostFills (this.extend (request, params));
         return this.filterBy (orders, 'status', 'closed');
         // TODO needs double check
+    }
+
+    async fetchDepositAddress (symbol = undefined, params = {}) {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        const request = {
+            'symbol': market['id'],
+        };
+        const defaultType = this.safeString2 (this.options, 'GetWalletAddress', 'defaultType', 'spot');
+        const type = this.safeString (params, 'type', defaultType);
+        const method = (type === 'spot') ? 'spotv3privateGetWalletAddress' : 'futuresv2privateGetWalletAddress';
+        const response = await this[method] (this.extend (request, params));
+        console.log (response);
     }
 
     sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body) {
