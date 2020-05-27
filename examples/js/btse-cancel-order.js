@@ -10,12 +10,13 @@ const log       = require ('ololog').configure ({ locate: false })
         'secret': 'M2I5NTMzZGE4MGViNDIy',
     });
 
-    const symbol = 'BTC-USD'; // edit here
+    const symbol = 'BTC/USD'; // edit here
     const id = 'f0403eff-ecd0-4a0d-9006-1fb6761b6927' // edit here
 
     const params = {}        // edit here
 
     let order = await exchange.cancelOrder(id, symbol, params)
+    //let order = await exchange.cancelAllOrders(symbol)
     console.log (order)
 }) ()
 
