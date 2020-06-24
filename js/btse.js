@@ -20,7 +20,7 @@ module.exports = class btse extends Exchange {
                 'cancelAllOrders': true,
                 'fetchClosedOrders': false,
                 'fetchCurrencies': false,
-                'fetchDepositAddress': false,
+                'fetchDepositAddress': true,
                 'fetchDeposits': true,
                 'fetchFundingFees': false,
                 'fetchMyTrades': true,
@@ -28,12 +28,12 @@ module.exports = class btse extends Exchange {
                 'fetchOpenOrders': true,
                 'fetchOrder': true,
                 'fetchOrderBook': true,
-                'fetchOrders': true,
+                'fetchOrders': false,
                 'fetchTicker': true,
-                'fetchTickers': true,
+                'fetchTickers': false,
                 'fetchTrades': true,
-                'fetchTradingFees': false,
-                'fetchWithdrawals': true,
+                'fetchTradingFees': true,
+                'fetchWithdrawals': false,
                 'withdraw': true,
             },
             'timeframes': {
@@ -59,8 +59,8 @@ module.exports = class btse extends Exchange {
                     'web': 'https://www.btse.com',
                     'api': 'https://api.btse.com',
                     'spotv2': 'https://api.btse.com/spot/api/v2',
-                    'spotv3': 'https://api.btse.com/spot/api/v3.1',
-                    'spotv3private': 'https://api.btse.com/spot/api/v3.1',
+                    'spotv3': 'https://api.btse.com/spot/api/v3.2',
+                    'spotv3private': 'https://api.btse.com/spot/api/v3.2',
                     'futuresv2': 'https://api.btse.com/futures/api/v2.1',
                     'futuresv2private': 'https://api.btse.com/futures/api/v2.1',
                     'testnet': 'https://testapi.btse.io',
@@ -102,12 +102,14 @@ module.exports = class btse extends Exchange {
                         'user/trade_history',
                         'user/wallet',
                         'user/wallet_history',
-                        'wallet/address',
+                        'user/wallet/address',
                     ],
                     'post': [
                         'order',
                         'order/peg',
                         'order/cancelAllAfter',
+                        'user/wallet/address',
+                        'user/wallet/withdraw',
                     ],
                     'delete': [
                         'order',
@@ -315,6 +317,26 @@ module.exports = class btse extends Exchange {
         return this.parseTrades (response, market, since, limit);
     }
 
+    async fetchMyTrades (symbol = undefined, since = undefined, limit = undefined, params = {}) {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        const request = {
+            'symbol': market['id'],
+        };
+        if (limit !== undefined) {
+            request['count'] = limit;
+        }
+        if (since !== undefined) {
+            request['startTime'] = parseInt (since / 1000);
+        }
+        const defaultType = this.safeString2 (this.options, 'GetUserTradeHistory', 'defaultType', 'spot');
+        const type = this.safeString (params, 'type', defaultType);
+        const method = (type === 'spot') ? 'spotv3privateGetUserTradeHistory' : 'futuresv2privateGetUserTradeHistory';
+        const response = await this[method] (this.extend (request, params));
+        const trades = this.safeValue (response, 'result', []);
+        return this.parseTrades (trades, market, since, limit);
+    }
+
     parseTrade (trade, market) {
         const timestamp = this.safeValue (trade, 'timestamp');
         return {
@@ -386,6 +408,23 @@ module.exports = class btse extends Exchange {
         const method = (type === 'spot') ? 'spotv3GetOhlcv' : 'futuresv2GetOhlcv';
         const response = await this[method] (this.extend (request, params));
         return this.parseOHLCVs (response, market['id'].toUpperCase (), timeframe, since, limit);
+    }
+
+    async fetchTradingFees (params = undefined) {
+        await this.loadMarkets ();
+        const market = params ? this.market (params.symbol) : undefined;
+        const request = {
+            'symbol': market ? market['id'].toUpperCase () : undefined,
+        };
+        const defaultType = this.safeString2 (this.options, 'GetTradingFees', 'defaultType', 'spot');
+        const type = this.safeString (params, 'type', defaultType);
+        const method = (type === 'spot') ? 'spotv3privateGetUserFees' : 'futuresv2privateGetUserFees';
+        const response = await this[method] (this.extend (request, params));
+        return {
+            'info': response,
+            // 'maker': this.safeFloat (result, 'makerFee'),
+            // 'taker': this.safeFloat (result, 'takerFee'),
+        };
     }
 
     async createOrder (symbol, orderType, side, size, price = undefined, params = {}) {
@@ -544,30 +583,86 @@ module.exports = class btse extends Exchange {
         return this.parseOrder (response[0]);
     }
 
-    async fetchClosedOrders (symbol = undefined, since = undefined, limit = undefined, params = {}) {
+    async createDepositAddress (currency, params = {}) {
         await this.loadMarkets ();
-        const market = this.market (symbol);
         const request = {
-            'symbol': market['id'],
-            'before': since,
-            limit,
+            currency,
         };
-        const orders = await this.spotv2privatePostFills (this.extend (request, params));
-        return this.filterBy (orders, 'status', 'closed');
-        // TODO needs double check
+        const response = await this.spotv3privatePostUserWalletAddress (this.extend (request, params));
+        return {
+            'currency': currency,
+            'address': response.address,
+            'tag': response.created,
+            'info': response,
+        };
     }
 
-    async fetchDepositAddress (symbol = undefined, params = {}) {
+    async fetchDepositAddress (currency, params = {}) {
         await this.loadMarkets ();
-        const market = this.market (symbol);
         const request = {
-            'symbol': market['id'],
+            currency,
         };
-        const defaultType = this.safeString2 (this.options, 'GetWalletAddress', 'defaultType', 'spot');
-        const type = this.safeString (params, 'type', defaultType);
-        const method = (type === 'spot') ? 'spotv3privateGetWalletAddress' : 'futuresv2privateGetWalletAddress';
-        const response = await this[method] (this.extend (request, params));
-        console.log (response);
+        const response = await this.spotv3privateGetUserWalletAddress (this.extend (request, params));
+        return {
+            'currency': currency,
+            'address': response.address,
+            'tag': response.created,
+            'info': response,
+        };
+    }
+
+    async withdraw (code, amount, address, tag = undefined, params = {}) {
+        await this.loadMarkets ();
+        this.checkAddress (address);
+        const currency = this.currency (code);
+        const request = {
+            'currency': currency['id'],
+            'amount': amount.toString (),
+            address,
+        };
+        if (tag !== undefined) {
+            request['tag'] = tag;
+        }
+        const response = await this.spotv3privatePostUserWalletWithdraw (this.extend (request, params));
+        return {
+            'id': response.withdraw_id,
+            'info': response,
+        };
+    }
+
+    parseTransaction (transaction) {
+        const code = this.safeCurrencyCode (this.safeString (transaction, 'currency'));
+        const id = this.safeInteger (transaction, 'withdraw_id');
+        const amount = this.safeFloat (transaction, 'amount');
+        const status = this.parseTransactionStatus (this.safeString (transaction, 'status'));
+        const timestamp = this.parse8601 (this.safeString (transaction, 'time'));
+        const txid = this.safeString (transaction, 'txid');
+        const address = this.safeString (transaction, 'address');
+        const tag = this.safeString (transaction, 'tag');
+        const fee = this.safeFloat (transaction, 'fee');
+        return {
+            'info': transaction,
+            'id': id,
+            'txid': txid,
+            'timestamp': timestamp,
+            'datetime': this.iso8601 (timestamp),
+            'addressFrom': undefined,
+            'address': undefined,
+            'addressTo': address,
+            'tagFrom': undefined,
+            'tag': tag,
+            'tagTo': undefined,
+            'type': undefined,
+            'amount': amount,
+            'currency': code,
+            'status': status,
+            'updated': undefined,
+            'fee': {
+                'currency': code,
+                'cost': fee,
+                'rate': undefined,
+            },
+        };
     }
 
     sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body) {
