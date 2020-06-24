@@ -630,41 +630,6 @@ module.exports = class btse extends Exchange {
         };
     }
 
-    parseTransaction (transaction) {
-        const code = this.safeCurrencyCode (this.safeString (transaction, 'currency'));
-        const id = this.safeInteger (transaction, 'withdraw_id');
-        const amount = this.safeFloat (transaction, 'amount');
-        const status = this.parseTransactionStatus (this.safeString (transaction, 'status'));
-        const timestamp = this.parse8601 (this.safeString (transaction, 'time'));
-        const txid = this.safeString (transaction, 'txid');
-        const address = this.safeString (transaction, 'address');
-        const tag = this.safeString (transaction, 'tag');
-        const fee = this.safeFloat (transaction, 'fee');
-        return {
-            'info': transaction,
-            'id': id,
-            'txid': txid,
-            'timestamp': timestamp,
-            'datetime': this.iso8601 (timestamp),
-            'addressFrom': undefined,
-            'address': undefined,
-            'addressTo': address,
-            'tagFrom': undefined,
-            'tag': tag,
-            'tagTo': undefined,
-            'type': undefined,
-            'amount': amount,
-            'currency': code,
-            'status': status,
-            'updated': undefined,
-            'fee': {
-                'currency': code,
-                'cost': fee,
-                'rate': undefined,
-            },
-        };
-    }
-
     sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body) {
         let url = this.urls['api'][api] + '/' + this.implodeParams (path, params);
         let bodyText = undefined;
