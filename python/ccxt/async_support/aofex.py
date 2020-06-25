@@ -235,7 +235,7 @@ class aofex(Exchange):
             })
         return result
 
-    def parse_ohlcv(self, ohlcv, market=None, timeframe='5m', since=None, limit=None):
+    def parse_ohlcv(self, ohlcv, market=None):
         #
         #     {
         #         id:  1584950100,
@@ -303,7 +303,7 @@ class aofex(Exchange):
         #
         result = self.safe_value(response, 'result', {})
         data = self.safe_value(result, 'data', [])
-        return self.parse_ohlcvs(data, market, timeframe, since, limit)
+        return self.parse_ohlcvs(data, market, since, limit)
 
     async def fetch_balance(self, params={}):
         await self.load_markets()
@@ -704,7 +704,9 @@ class aofex(Exchange):
             symbol = market['symbol']
             base = market['base']
             quote = market['quote']
-        timestamp = self.parse8601(self.safe_string(order, 'ctime')) - 28800000  # 8 hours, adjust to UTC
+        timestamp = self.parse8601(self.safe_string(order, 'ctime'))
+        if timestamp is not None:
+            timestamp -= 28800000  # 8 hours, adjust to UTC
         orderType = self.safe_string(order, 'type')
         type = 'limit' if (orderType == '2') else 'market'
         side = self.safe_string(order, 'side')

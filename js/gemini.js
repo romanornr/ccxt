@@ -185,6 +185,8 @@ module.exports = class gemini extends Exchange {
         if (numRows < 2) {
             throw new NotSupported (error);
         }
+        const apiSymbols = await this.fetchMarketsFromAPI (params);
+        const indexedSymbols = this.indexBy (apiSymbols, 'symbol');
         const result = [];
         // skip the first element (empty string)
         for (let i = 1; i < numRows; i++) {
@@ -227,6 +229,9 @@ module.exports = class gemini extends Exchange {
                 const pricePrecisionParts = pricePrecisionString.split (' ');
                 const pricePrecision = this.precisionFromString (pricePrecisionParts[0]);
                 const symbol = base + '/' + quote;
+                if (!(symbol in indexedSymbols)) {
+                    continue;
+                }
                 const id = baseId + quoteId;
                 const active = undefined;
                 result.push ({
@@ -268,8 +273,16 @@ module.exports = class gemini extends Exchange {
         for (let i = 0; i < response.length; i++) {
             const id = response[i];
             const market = id;
-            const baseId = id.slice (0, 3);
-            const quoteId = id.slice (3, 6);
+            const idLength = id.length - 0;
+            let baseId = undefined;
+            let quoteId = undefined;
+            if (idLength === 7) {
+                baseId = id.slice (0, 4);
+                quoteId = id.slice (4, 7);
+            } else {
+                baseId = id.slice (0, 3);
+                quoteId = id.slice (3, 6);
+            }
             const base = this.safeCurrencyCode (baseId);
             const quote = this.safeCurrencyCode (quoteId);
             const symbol = base + '/' + quote;
@@ -702,6 +715,13 @@ module.exports = class gemini extends Exchange {
             'symbol': market['id'],
         };
         const response = await this.publicGetV2CandlesSymbolTimeframe (this.extend (request, params));
+        //
+        //     [
+        //         [1591515000000,0.02509,0.02509,0.02509,0.02509,0],
+        //         [1591514700000,0.02503,0.02509,0.02503,0.02509,44.6405],
+        //         [1591514400000,0.02503,0.02503,0.02503,0.02503,0],
+        //     ]
+        //
         return this.parseOHLCVs (response, market, timeframe, since, limit);
     }
 };

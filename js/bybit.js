@@ -48,7 +48,7 @@ module.exports = class bybit extends Exchange {
                 '30m': '30',
                 '1h': '60',
                 '2h': '120',
-                '3h': '180',
+                '4h': '240',
                 '6h': '360',
                 '12h': '720',
                 '1d': 'D',
@@ -60,7 +60,7 @@ module.exports = class bybit extends Exchange {
                 'test': 'https://api-testnet.bybit.com',
                 'logo': 'https://user-images.githubusercontent.com/51840849/76547799-daff5b80-649e-11ea-87fb-3be9bac08954.jpg',
                 'api': 'https://api.bybit.com',
-                'www': 'https://www.bybit.com/',
+                'www': 'https://www.bybit.com',
                 'doc': [
                     'https://bybit-exchange.github.io/docs/inverse/',
                     'https://bybit-exchange.github.io/docs/linear/',
@@ -127,16 +127,11 @@ module.exports = class bybit extends Exchange {
                 },
                 'privateLinear': {
                     'get': [
-                        'order-list',
-                        'order-search',
+                        'order/list',
+                        'order/search',
                         'stop-order/list',
                         'stop-order/search',
                         'position/list',
-                        'position/set-auto-add-margin',
-                        'position/set-leverage',
-                        'position/switch-isolated',
-                        'position/trading-stop',
-                        'position/add-margin',
                         'trade/execution/list',
                         'trade/closed-pnl/list',
                         'risk-limit',
@@ -150,6 +145,11 @@ module.exports = class bybit extends Exchange {
                         'stop-order/create',
                         'stop-order/cancel',
                         'stop-order/cancelAll',
+                        'position/switch-isolated',
+                        'position/set-auto-add-margin',
+                        'position/set-leverage',
+                        'position/trading-stop',
+                        'position/add-margin',
                     ],
                 },
                 'position': {
@@ -298,8 +298,8 @@ module.exports = class bybit extends Exchange {
         return this.milliseconds () - this.options['timeDifference'];
     }
 
-    async loadTimeDifference () {
-        const serverTime = await this.fetchTime ();
+    async loadTimeDifference (params = {}) {
+        const serverTime = await this.fetchTime (params);
         const after = this.milliseconds ();
         this.options['timeDifference'] = after - serverTime;
         return this.options['timeDifference'];
@@ -360,7 +360,11 @@ module.exports = class bybit extends Exchange {
             const quote = this.safeCurrencyCode (quoteId);
             const linear = (quote in linearQuoteCurrencies);
             const inverse = !linear;
-            const symbol = base + '/' + quote;
+            let symbol = base + '/' + quote;
+            const baseQuote = base + quote;
+            if (baseQuote !== id) {
+                symbol = id;
+            }
             const lotSizeFilter = this.safeValue (market, 'lot_size_filter', {});
             const priceFilter = this.safeValue (market, 'price_filter', {});
             const precision = {
@@ -641,7 +645,9 @@ module.exports = class bybit extends Exchange {
         return this.filterByArray (tickers, 'symbol', symbols);
     }
 
-    parseOHLCV (ohlcv, market = undefined, timeframe = '1m', since = undefined, limit = undefined) {
+    parseOHLCV (ohlcv, market = undefined) {
+        //
+        // inverse perpetual BTC/USD
         //
         //     {
         //         symbol: 'BTCUSD',
@@ -653,7 +659,9 @@ module.exports = class bybit extends Exchange {
         //         close: '7763.5',
         //         volume: '1259766',
         //         turnover: '162.32773718999994'
-        //     },
+        //     }
+        //
+        // linear perpetual BTC/USDT
         //
         //     {
         //         "id":143536,
@@ -799,23 +807,20 @@ module.exports = class bybit extends Exchange {
         let symbol = undefined;
         let base = undefined;
         const marketId = this.safeString (trade, 'symbol');
+        const amount = this.safeFloat2 (trade, 'qty', 'exec_qty');
+        let cost = this.safeFloat (trade, 'exec_value');
+        const price = this.safeFloat2 (trade, 'price', 'exec_price');
         if (marketId in this.markets_by_id) {
             market = this.markets_by_id[marketId];
             symbol = market['symbol'];
             base = market['base'];
         }
-        if ((symbol === undefined) && (market !== undefined)) {
-            symbol = market['symbol'];
-            base = market['base'];
+        if (market !== undefined) {
+            if (symbol === undefined) {
+                symbol = market['symbol'];
+                base = market['base'];
+            }
         }
-        let timestamp = this.parse8601 (this.safeString (trade, 'time'));
-        if (timestamp === undefined) {
-            timestamp = this.safeInteger (trade, 'trade_time_ms');
-        }
-        const side = this.safeStringLower (trade, 'side');
-        const price = this.safeFloat2 (trade, 'price', 'exec_price');
-        const amount = this.safeFloat2 (trade, 'qty', 'exec_qty');
-        let cost = this.safeFloat (trade, 'exec_value');
         if (cost === undefined) {
             if (amount !== undefined) {
                 if (price !== undefined) {
@@ -823,6 +828,11 @@ module.exports = class bybit extends Exchange {
                 }
             }
         }
+        let timestamp = this.parse8601 (this.safeString (trade, 'time'));
+        if (timestamp === undefined) {
+            timestamp = this.safeInteger (trade, 'trade_time_ms');
+        }
+        const side = this.safeStringLower (trade, 'side');
         const lastLiquidityInd = this.safeString (trade, 'last_liquidity_ind');
         const takerOrMaker = (lastLiquidityInd === 'AddedLiquidity') ? 'maker' : 'taker';
         const feeCost = this.safeFloat (trade, 'exec_fee');
@@ -947,11 +957,11 @@ module.exports = class bybit extends Exchange {
             'Rejected': 'rejected', // order is triggered but failed upon being placed
             'New': 'open',
             'PartiallyFilled': 'open',
-            'Filled': 'filled',
+            'Filled': 'closed',
             'Cancelled': 'canceled',
             'PendingCancel': 'canceling', // the engine has received the cancellation but there is no guarantee that it will be successful
             // conditional orders
-            'Active': 'closed', // order is triggered and placed successfully
+            'Active': 'open', // order is triggered and placed successfully
             'Untriggered': 'open', // order waits to be triggered
             'Triggered': 'closed', // order is triggered
             // 'Cancelled': 'canceled', // order is cancelled
@@ -1027,24 +1037,13 @@ module.exports = class bybit extends Exchange {
         const id = this.safeString (order, 'order_id');
         const price = this.safeFloat (order, 'price');
         const average = this.safeFloat (order, 'average_price');
-        let amount = undefined;
-        let cost = undefined;
-        let filled = undefined;
-        let remaining = undefined;
+        const amount = this.safeFloat (order, 'qty');
+        let cost = this.safeFloat (order, 'cum_exec_value');
+        let filled = this.safeFloat (order, 'cum_exec_qty');
+        let remaining = this.safeFloat (order, 'leaves_qty');
         if (market !== undefined) {
             symbol = market['symbol'];
             base = market['base'];
-            if (market['inverse']) {
-                cost = this.safeFloat (order, 'cum_exec_qty');
-                filled = this.safeFloat (order, 'cum_exec_value');
-                remaining = this.safeFloat (order, 'leaves_value');
-                amount = this.sum (filled, remaining);
-            } else {
-                amount = this.safeFloat (order, 'qty');
-                cost = this.safeFloat (order, 'cum_exec_value');
-                filled = this.safeFloat (order, 'cum_exec_qty');
-                remaining = this.safeFloat (order, 'leaves_qty');
-            }
         }
         let lastTradeTimestamp = this.safeTimestamp (order, 'last_exec_time');
         if (lastTradeTimestamp === 0) {
@@ -1678,6 +1677,8 @@ module.exports = class bybit extends Exchange {
         const method = (marketType === 'linear') ? 'privateLinearGetTradeExecutionList' : 'privateGetExecutionList';
         const response = await this[method] (this.extend (request, params));
         //
+        // inverse
+        //
         //     {
         //         "ret_code": 0,
         //         "ret_msg": "OK",
@@ -1717,8 +1718,48 @@ module.exports = class bybit extends Exchange {
         //         "rate_limit": 120
         //     }
         //
+        // linear
+        //
+        //     {
+        //         "ret_code":0,
+        //         "ret_msg":"OK",
+        //         "ext_code":"",
+        //         "ext_info":"",
+        //         "result":{
+        //             "current_page":1,
+        //             "data":[
+        //                 {
+        //                     "order_id":"b59418ec-14d4-4ef9-b9f4-721d5d576974",
+        //                     "order_link_id":"",
+        //                     "side":"Sell",
+        //                     "symbol":"BTCUSDT",
+        //                     "exec_id":"0327284d-faec-5191-bd89-acc5b4fafda9",
+        //                     "price":0.5,
+        //                     "order_price":0.5,
+        //                     "order_qty":0.01,
+        //                     "order_type":"Market",
+        //                     "fee_rate":0.00075,
+        //                     "exec_price":9709.5,
+        //                     "exec_type":"Trade",
+        //                     "exec_qty":0.01,
+        //                     "exec_fee":0.07282125,
+        //                     "exec_value":97.095,
+        //                     "leaves_qty":0,
+        //                     "closed_size":0.01,
+        //                     "last_liquidity_ind":"RemovedLiquidity",
+        //                     "trade_time":1591648052,
+        //                     "trade_time_ms":1591648052861
+        //                 }
+        //             ]
+        //         },
+        //         "time_now":"1591736501.979264",
+        //         "rate_limit_status":119,
+        //         "rate_limit_reset_ms":1591736501974,
+        //         "rate_limit":120
+        //     }
+        //
         const result = this.safeValue (response, 'result', {});
-        const trades = this.safeValue (result, 'trade_list', []);
+        const trades = this.safeValue2 (result, 'trade_list', 'data', []);
         return this.parseTrades (trades, market, since, limit);
     }
 
@@ -2032,7 +2073,7 @@ module.exports = class bybit extends Exchange {
             const timestamp = this.nonce ();
             const query = this.extend (params, {
                 'api_key': this.apiKey,
-                'recvWindow': this.options['recvWindow'],
+                'recv_window': this.options['recvWindow'],
                 'timestamp': timestamp,
             });
             const auth = this.rawencode (this.keysort (query));

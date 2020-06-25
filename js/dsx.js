@@ -23,7 +23,7 @@ module.exports = class dsx extends Exchange {
                 'fetchOrders': true,
                 'fetchOpenOrders': true,
                 'fetchClosedOrders': false,
-                'fetchOrderBooks': false,
+                'fetchOrderBooks': true,
                 'createDepositAddress': true,
                 'fetchDepositAddress': true,
                 'fetchTransactions': true,
@@ -34,13 +34,13 @@ module.exports = class dsx extends Exchange {
             'urls': {
                 'logo': 'https://user-images.githubusercontent.com/51840849/76909626-cb2bb100-68bc-11ea-99e0-28ba54f04792.jpg',
                 'api': {
-                    'public': 'https://dsx.uk/mapi', // market data
-                    'private': 'https://dsx.uk/tapi', // trading
-                    'dwapi': 'https://dsx.uk/dwapi', // deposit/withdraw
+                    'public': 'https://dsxglobal.com/mapi', // market data
+                    'private': 'https://dsxglobal.com/tapi', // trading
+                    'dwapi': 'https://dsxglobal.com/dwapi', // deposit/withdraw
                 },
-                'www': 'https://dsx.uk',
+                'www': 'https://dsxglobal.com',
                 'doc': [
-                    'https://dsx.uk/developers/publicApi',
+                    'https://dsxglobal.com/developers/publicApi',
                 ],
             },
             'fees': {
@@ -566,7 +566,7 @@ module.exports = class dsx extends Exchange {
         return this.parseTrades (response[market['id']], market, since, limit);
     }
 
-    parseOHLCV (ohlcv, market = undefined, timeframe = '1m', since = undefined, limit = undefined) {
+    parseOHLCV (ohlcv, market = undefined) {
         //
         //     {
         //         "high" : 0.01955,
@@ -714,9 +714,6 @@ module.exports = class dsx extends Exchange {
             'filled': filled,
             'fee': undefined,
             // 'trades': this.parseTrades (order['trades'], market),
-            'clientOrderId': undefined,
-            'average': undefined,
-            'trades': undefined,
         };
     }
 
@@ -843,7 +840,6 @@ module.exports = class dsx extends Exchange {
             'status': status,
             'fee': fee,
             'trades': trades,
-            'average': undefined,
         };
     }
 

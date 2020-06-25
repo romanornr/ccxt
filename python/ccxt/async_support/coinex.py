@@ -263,11 +263,12 @@ class coinex(Exchange):
             if marketId in self.markets_by_id:
                 market = self.markets_by_id[marketId]
                 symbol = market['symbol']
-            ticker = {
+            ticker = self.parse_ticker({
                 'date': timestamp,
                 'ticker': tickers[marketId],
-            }
-            result[symbol] = self.parse_ticker(ticker, market)
+            }, market)
+            ticker['symbol'] = symbol
+            result[symbol] = ticker
         return result
 
     async def fetch_order_book(self, symbol, limit=20, params={}):
@@ -335,14 +336,26 @@ class coinex(Exchange):
         response = await self.publicGetMarketDeals(self.extend(request, params))
         return self.parse_trades(response['data'], market, since, limit)
 
-    def parse_ohlcv(self, ohlcv, market=None, timeframe='5m', since=None, limit=None):
+    def parse_ohlcv(self, ohlcv, market=None):
+        #
+        #     [
+        #         1591484400,
+        #         "0.02505349",
+        #         "0.02506988",
+        #         "0.02507000",
+        #         "0.02505304",
+        #         "343.19716223",
+        #         "8.6021323866383196",
+        #         "ETHBTC"
+        #     ]
+        #
         return [
-            ohlcv[0] * 1000,
-            float(ohlcv[1]),
-            float(ohlcv[3]),
-            float(ohlcv[4]),
-            float(ohlcv[2]),
-            float(ohlcv[5]),
+            self.safe_timestamp(ohlcv, 0),
+            self.safe_float(ohlcv, 1),
+            self.safe_float(ohlcv, 3),
+            self.safe_float(ohlcv, 4),
+            self.safe_float(ohlcv, 2),
+            self.safe_float(ohlcv, 5),
         ]
 
     async def fetch_ohlcv(self, symbol, timeframe='5m', since=None, limit=None, params={}):
@@ -353,7 +366,19 @@ class coinex(Exchange):
             'type': self.timeframes[timeframe],
         }
         response = await self.publicGetMarketKline(self.extend(request, params))
-        return self.parse_ohlcvs(response['data'], market, timeframe, since, limit)
+        #
+        #     {
+        #         "code": 0,
+        #         "data": [
+        #             [1591484400, "0.02505349", "0.02506988", "0.02507000", "0.02505304", "343.19716223", "8.6021323866383196", "ETHBTC"],
+        #             [1591484700, "0.02506990", "0.02508109", "0.02508109", "0.02506979", "91.59841581", "2.2972047780447000", "ETHBTC"],
+        #             [1591485000, "0.02508106", "0.02507996", "0.02508106", "0.02507500", "65.15307697", "1.6340597822306000", "ETHBTC"],
+        #         ],
+        #         "message": "OK"
+        #     }
+        #
+        data = self.safe_value(response, 'data', [])
+        return self.parse_ohlcvs(data, market, timeframe, since, limit)
 
     async def fetch_balance(self, params={}):
         await self.load_markets()
@@ -592,7 +617,7 @@ class coinex(Exchange):
             'coin_type': currency['id'],
             'coin_address': address,  # must be authorized, inter-user transfer by a registered mobile phone number or an email address is supported
             'actual_amount': float(amount),  # the actual amount without fees, https://www.coinex.com/fees
-            'transfer_method': '1',  # '1' = normal onchain transfer, '2' = internal local transfer from one user to another
+            'transfer_method': 'onchain',  # onchain, local
         }
         response = await self.privatePostBalanceCoinWithdraw(self.extend(request, params))
         #

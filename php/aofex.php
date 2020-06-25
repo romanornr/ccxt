@@ -231,7 +231,7 @@ class aofex extends Exchange {
         return $result;
     }
 
-    public function parse_ohlcv($ohlcv, $market = null, $timeframe = '5m', $since = null, $limit = null) {
+    public function parse_ohlcv($ohlcv, $market = null) {
         //
         //     {
         //         id =>  1584950100,
@@ -301,7 +301,7 @@ class aofex extends Exchange {
         //
         $result = $this->safe_value($response, 'result', array());
         $data = $this->safe_value($result, 'data', array());
-        return $this->parse_ohlcvs($data, $market, $timeframe, $since, $limit);
+        return $this->parse_ohlcvs($data, $market, $since, $limit);
     }
 
     public function fetch_balance($params = array ()) {
@@ -730,7 +730,10 @@ class aofex extends Exchange {
             $base = $market['base'];
             $quote = $market['quote'];
         }
-        $timestamp = $this->parse8601($this->safe_string($order, 'ctime')) - 28800000; // 8 hours, adjust to UTC
+        $timestamp = $this->parse8601($this->safe_string($order, 'ctime'));
+        if ($timestamp !== null) {
+            $timestamp -= 28800000; // 8 hours, adjust to UTC
+        }
         $orderType = $this->safe_string($order, 'type');
         $type = ($orderType === '2') ? 'limit' : 'market';
         $side = $this->safe_string($order, 'side');
