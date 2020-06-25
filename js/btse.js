@@ -379,15 +379,25 @@ module.exports = class btse extends Exchange {
         const method = (type === 'spot') ? 'spotv3privateGetUserWallet' : 'futuresv2privateGetUserWallet';
         const response = await this[method] (this.extend (params));
         const result = {};
-        // TODO different response parsing for futures
-        response.forEach ((balance) => {
-            const code = this.safeCurrencyCode (this.safeString (balance, 'currency'));
-            const account = this.account ();
-            account['total'] = this.safeFloat (balance, 'total');
-            account['free'] = this.safeFloat (balance, 'available');
-            account['used'] = account['total'] - this.safeFloat (balance, 'available');
-            result[code] = account;
-        });
+        if (type === 'spot') {
+            response.forEach ((balance) => {
+                const code = this.safeCurrencyCode (this.safeString (balance, 'currency'));
+                const account = this.account ();
+                account['total'] = this.safeFloat (balance, 'total');
+                account['free'] = this.safeFloat (balance, 'available');
+                account['used'] = account['total'] - this.safeFloat (balance, 'available');
+                result[code] = account;
+            });
+        } else {
+            response[0].assets.forEach ((balance) => {
+                const code = this.safeCurrencyCode (this.safeString (balance, 'currency'));
+                const account = this.account ();
+                account['total'] = this.safeFloat (balance, 'balance');
+                account['free'] = this.safeFloat (balance, 'balance');
+                account['used'] = 0;
+                result[code] = account;
+            });
+        }
         result['info'] = response;
         return this.parseBalance (result);
     }
@@ -484,14 +494,12 @@ module.exports = class btse extends Exchange {
         return this.parseOrder (response[0]);
     }
 
-    // TODO doesn't seem to actually cancel anything
     async cancelAllOrders (symbol = undefined, params = {}) {
         await this.loadMarkets ();
         const request = {
-            'timeout': 60000,
+            'timeout': params.timeout ? params.timeout : 0,
         };
         if (symbol !== undefined) {
-            // TODO that part works but the call is INSANELY slow
             return this.cancelOrder (undefined, symbol);
         }
         const defaultType = this.safeString2 (this.options, 'OrderCancelAllAfter', 'defaultType', 'spot');
@@ -560,7 +568,7 @@ module.exports = class btse extends Exchange {
             average,
             filled,
             remaining,
-            'status': this.parseOrderStatus (this.safeString (order, 'status')), // TODO they seem to have inconsistencies between orderState and status in between calls involving orders
+            'status': this.parseOrderStatus (this.safeString (order, 'status')),
             'fee': undefined,
             'trades': undefined,
             'info': order,
@@ -580,7 +588,7 @@ module.exports = class btse extends Exchange {
         const type = this.safeString (params, 'type', defaultType);
         const method = (type === 'spot') ? 'spotv3privateGetUserOpenOrders' : 'futuresv2privateGetUserOpenOrders';
         const response = await this[method] (this.extend (request, params));
-        return this.parseOrder (response[0]);
+        return response.length ? this.parseOrder (response[0]) : [];
     }
 
     async createDepositAddress (currency, params = {}) {
