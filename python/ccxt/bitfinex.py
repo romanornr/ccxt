@@ -345,6 +345,7 @@ class bitfinex(Exchange):
                     'Cannot evaluate your available balance, please try again': ExchangeNotAvailable,
                 },
                 'broad': {
+                    'Invalid X-BFX-SIGNATURE': AuthenticationError,
                     'This API key does not have permission': PermissionDenied,  # authenticated but not authorized
                     'not enough exchange balance for ': InsufficientFunds,  # when buying cost is greater than the available quote currency
                     'minimum size for ': InvalidOrder,  # when amount below limits.amount.min
@@ -508,7 +509,7 @@ class bitfinex(Exchange):
             quote = self.safe_currency_code(quoteId)
             symbol = base + '/' + quote
             precision = {
-                'price': market['price_precision'],
+                'price': self.safe_integer(market, 'price_precision'),
                 'amount': None,
             }
             limits = {
@@ -748,7 +749,7 @@ class bitfinex(Exchange):
     def edit_order(self, id, symbol, type, side, amount=None, price=None, params={}):
         self.load_markets()
         order = {
-            'order_id': id,
+            'order_id': int(id),
         }
         if price is not None:
             order['price'] = self.price_to_precision(symbol, price)
@@ -853,14 +854,24 @@ class bitfinex(Exchange):
         response = self.privatePostOrderStatus(self.extend(request, params))
         return self.parse_order(response)
 
-    def parse_ohlcv(self, ohlcv, market=None, timeframe='1m', since=None, limit=None):
+    def parse_ohlcv(self, ohlcv, market=None):
+        #
+        #     [
+        #         1457539800000,
+        #         0.02594,
+        #         0.02594,
+        #         0.02594,
+        #         0.02594,
+        #         0.1
+        #     ]
+        #
         return [
-            ohlcv[0],
-            ohlcv[1],
-            ohlcv[3],
-            ohlcv[4],
-            ohlcv[2],
-            ohlcv[5],
+            self.safe_integer(ohlcv, 0),
+            self.safe_float(ohlcv, 1),
+            self.safe_float(ohlcv, 3),
+            self.safe_float(ohlcv, 4),
+            self.safe_float(ohlcv, 2),
+            self.safe_float(ohlcv, 5),
         ]
 
     def fetch_ohlcv(self, symbol, timeframe='1m', since=None, limit=None, params={}):
@@ -878,6 +889,13 @@ class bitfinex(Exchange):
         if since is not None:
             request['start'] = since
         response = self.v2GetCandlesTradeTimeframeSymbolHist(self.extend(request, params))
+        #
+        #     [
+        #         [1457539800000,0.02594,0.02594,0.02594,0.02594,0.1],
+        #         [1457547300000,0.02577,0.02577,0.02577,0.02577,0.01],
+        #         [1457550240000,0.0255,0.0253,0.0255,0.0252,3.2640000000000002],
+        #     ]
+        #
         return self.parse_ohlcvs(response, market, timeframe, since, limit)
 
     def get_currency_name(self, code):
@@ -918,16 +936,20 @@ class bitfinex(Exchange):
         }
 
     def fetch_transactions(self, code=None, since=None, limit=None, params={}):
-        if code is None:
-            raise ArgumentsRequired(self.id + ' fetchTransactions() requires a currency `code` argument')
         self.load_markets()
-        currency = self.currency(code)
-        request = {
-            'currency': currency['id'],
-        }
+        currencyId = self.safe_string(params, 'currency')
+        query = self.omit(params, 'currency')
+        currency = None
+        if currencyId is None:
+            if code is None:
+                raise ArgumentsRequired(self.id + ' fetchTransactions() requires a currency `code` argument or a `currency` parameter')
+            else:
+                currency = self.currency(code)
+                currencyId = currency['id']
+        query['currency'] = currencyId
         if since is not None:
-            request['since'] = int(since / 1000)
-        response = self.privatePostHistoryMovements(self.extend(request, params))
+            query['since'] = int(since / 1000)
+        response = self.privatePostHistoryMovements(self.extend(query, params))
         #
         #     [
         #         {
@@ -1078,8 +1100,7 @@ class bitfinex(Exchange):
                 'request': request,
             }, query)
             body = self.json(query)
-            query = self.encode(body)
-            payload = base64.b64encode(query)
+            payload = base64.b64encode(self.encode(body))
             secret = self.encode(self.secret)
             signature = self.hmac(payload, secret, hashlib.sha384)
             headers = {

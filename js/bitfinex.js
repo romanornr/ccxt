@@ -331,6 +331,7 @@ module.exports = class bitfinex extends Exchange {
                     'Cannot evaluate your available balance, please try again': ExchangeNotAvailable,
                 },
                 'broad': {
+                    'Invalid X-BFX-SIGNATURE': AuthenticationError,
                     'This API key does not have permission': PermissionDenied, // authenticated but not authorized
                     'not enough exchange balance for ': InsufficientFunds, // when buying cost is greater than the available quote currency
                     'minimum size for ': InvalidOrder, // when amount below limits.amount.min
@@ -500,7 +501,7 @@ module.exports = class bitfinex extends Exchange {
             const quote = this.safeCurrencyCode (quoteId);
             const symbol = base + '/' + quote;
             const precision = {
-                'price': market['price_precision'],
+                'price': this.safeInteger (market, 'price_precision'),
                 'amount': undefined,
             };
             const limits = {
@@ -774,7 +775,7 @@ module.exports = class bitfinex extends Exchange {
     async editOrder (id, symbol, type, side, amount = undefined, price = undefined, params = {}) {
         await this.loadMarkets ();
         const order = {
-            'order_id': id,
+            'order_id': parseInt (id),
         };
         if (price !== undefined) {
             order['price'] = this.priceToPrecision (symbol, price);
@@ -903,14 +904,24 @@ module.exports = class bitfinex extends Exchange {
         return this.parseOrder (response);
     }
 
-    parseOHLCV (ohlcv, market = undefined, timeframe = '1m', since = undefined, limit = undefined) {
+    parseOHLCV (ohlcv, market = undefined) {
+        //
+        //     [
+        //         1457539800000,
+        //         0.02594,
+        //         0.02594,
+        //         0.02594,
+        //         0.02594,
+        //         0.1
+        //     ]
+        //
         return [
-            ohlcv[0],
-            ohlcv[1],
-            ohlcv[3],
-            ohlcv[4],
-            ohlcv[2],
-            ohlcv[5],
+            this.safeInteger (ohlcv, 0),
+            this.safeFloat (ohlcv, 1),
+            this.safeFloat (ohlcv, 3),
+            this.safeFloat (ohlcv, 4),
+            this.safeFloat (ohlcv, 2),
+            this.safeFloat (ohlcv, 5),
         ];
     }
 
@@ -931,6 +942,13 @@ module.exports = class bitfinex extends Exchange {
             request['start'] = since;
         }
         const response = await this.v2GetCandlesTradeTimeframeSymbolHist (this.extend (request, params));
+        //
+        //     [
+        //         [1457539800000,0.02594,0.02594,0.02594,0.02594,0.1],
+        //         [1457547300000,0.02577,0.02577,0.02577,0.02577,0.01],
+        //         [1457550240000,0.0255,0.0253,0.0255,0.0252,3.2640000000000002],
+        //     ]
+        //
         return this.parseOHLCVs (response, market, timeframe, since, limit);
     }
 
@@ -977,18 +995,23 @@ module.exports = class bitfinex extends Exchange {
     }
 
     async fetchTransactions (code = undefined, since = undefined, limit = undefined, params = {}) {
-        if (code === undefined) {
-            throw new ArgumentsRequired (this.id + ' fetchTransactions() requires a currency `code` argument');
-        }
         await this.loadMarkets ();
-        const currency = this.currency (code);
-        const request = {
-            'currency': currency['id'],
-        };
-        if (since !== undefined) {
-            request['since'] = parseInt (since / 1000);
+        let currencyId = this.safeString (params, 'currency');
+        const query = this.omit (params, 'currency');
+        let currency = undefined;
+        if (currencyId === undefined) {
+            if (code === undefined) {
+                throw new ArgumentsRequired (this.id + ' fetchTransactions() requires a currency `code` argument or a `currency` parameter');
+            } else {
+                currency = this.currency (code);
+                currencyId = currency['id'];
+            }
         }
-        const response = await this.privatePostHistoryMovements (this.extend (request, params));
+        query['currency'] = currencyId;
+        if (since !== undefined) {
+            query['since'] = parseInt (since / 1000);
+        }
+        const response = await this.privatePostHistoryMovements (this.extend (query, params));
         //
         //     [
         //         {
@@ -1153,8 +1176,7 @@ module.exports = class bitfinex extends Exchange {
                 'request': request,
             }, query);
             body = this.json (query);
-            query = this.encode (body);
-            const payload = this.stringToBase64 (query);
+            const payload = this.stringToBase64 (this.encode (body));
             const secret = this.encode (this.secret);
             const signature = this.hmac (payload, secret, 'sha384');
             headers = {

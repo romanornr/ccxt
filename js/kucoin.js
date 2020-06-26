@@ -20,6 +20,7 @@ module.exports = class kucoin extends Exchange {
             'comment': 'Platform 2.0',
             'has': {
                 'CORS': false,
+                'fetchStatus': true,
                 'fetchTime': true,
                 'fetchMarkets': true,
                 'fetchCurrencies': true,
@@ -69,7 +70,9 @@ module.exports = class kucoin extends Exchange {
                 'public': {
                     'get': [
                         'timestamp',
+                        'status',
                         'symbols',
+                        'markets',
                         'market/allTickers',
                         'market/orderbook/level{level}',
                         'market/orderbook/level2',
@@ -82,6 +85,8 @@ module.exports = class kucoin extends Exchange {
                         'currencies',
                         'currencies/{currency}',
                         'prices',
+                        'mark-price/{symbol}/current',
+                        'margin/config',
                     ],
                     'post': [
                         'bullet-public',
@@ -94,6 +99,7 @@ module.exports = class kucoin extends Exchange {
                         'accounts/{accountId}/ledgers',
                         'accounts/{accountId}/holds',
                         'accounts/transferable',
+                        'sub/user',
                         'sub-accounts',
                         'sub-accounts/{subUserId}',
                         'deposit-addresses',
@@ -108,6 +114,17 @@ module.exports = class kucoin extends Exchange {
                         'limit/orders',
                         'fills',
                         'limit/fills',
+                        'margin/account',
+                        'margin/borrow',
+                        'margin/borrow/outstanding',
+                        'margin/borrow/borrow/repaid',
+                        'margin/lend/active',
+                        'margin/lend/done',
+                        'margin/lend/trade/unsettled',
+                        'margin/lend/trade/settled',
+                        'margin/lend/assets',
+                        'margin/market',
+                        'margin/margin/trade/last',
                     ],
                     'post': [
                         'accounts',
@@ -117,12 +134,18 @@ module.exports = class kucoin extends Exchange {
                         'withdrawals',
                         'orders',
                         'orders/multi',
+                        'margin/borrow',
+                        'margin/repay/all',
+                        'margin/repay/single',
+                        'margin/lend',
+                        'margin/toggle-auto-lend',
                         'bullet-private',
                     ],
                     'delete': [
                         'withdrawals/{withdrawalId}',
                         'orders',
                         'orders/{orderId}',
+                        'margin/lend/{orderId}',
                     ],
                 },
             },
@@ -210,6 +233,7 @@ module.exports = class kucoin extends Exchange {
                 'versions': {
                     'public': {
                         'GET': {
+                            'status': 'v1',
                             'market/orderbook/level{level}': 'v1',
                             'market/orderbook/level2': 'v2',
                             'market/orderbook/level2_20': 'v1',
@@ -231,8 +255,8 @@ module.exports = class kucoin extends Exchange {
         return this.milliseconds ();
     }
 
-    async loadTimeDifference () {
-        const response = await this.publicGetTimestamp ();
+    async loadTimeDifference (params = {}) {
+        const response = await this.publicGetTimestamp (params);
         const after = this.milliseconds ();
         const kucoinTime = this.safeInteger (response, 'data');
         this.options['timeDifference'] = parseInt (after - kucoinTime);
@@ -251,21 +275,46 @@ module.exports = class kucoin extends Exchange {
         return this.safeInteger (response, 'data');
     }
 
+    async fetchStatus (params = {}) {
+        const response = await this.publicGetStatus (params);
+        //
+        //     {
+        //         "code":"200000",
+        //         "data":{
+        //             "msg":"",
+        //             "status":"open"
+        //         }
+        //     }
+        //
+        const data = this.safeValue (response, 'data', {});
+        let status = this.safeValue (data, 'status');
+        if (status !== undefined) {
+            status = (status === 'open') ? 'ok' : 'maintenance';
+            this.status = this.extend (this.status, {
+                'status': status,
+                'updated': this.milliseconds (),
+            });
+        }
+        return this.status;
+    }
+
     async fetchMarkets (params = {}) {
         const response = await this.publicGetSymbols (params);
         //
-        // { quoteCurrency: 'BTC',
-        //   symbol: 'KCS-BTC',
-        //   quoteMaxSize: '9999999',
-        //   quoteIncrement: '0.000001',
-        //   baseMinSize: '0.01',
-        //   quoteMinSize: '0.00001',
-        //   enableTrading: true,
-        //   priceIncrement: '0.00000001',
-        //   name: 'KCS-BTC',
-        //   baseIncrement: '0.01',
-        //   baseMaxSize: '9999999',
-        //   baseCurrency: 'KCS' }
+        //     {
+        //         quoteCurrency: 'BTC',
+        //         symbol: 'KCS-BTC',
+        //         quoteMaxSize: '9999999',
+        //         quoteIncrement: '0.000001',
+        //         baseMinSize: '0.01',
+        //         quoteMinSize: '0.00001',
+        //         enableTrading: true,
+        //         priceIncrement: '0.00000001',
+        //         name: 'KCS-BTC',
+        //         baseIncrement: '0.01',
+        //         baseMaxSize: '9999999',
+        //         baseCurrency: 'KCS'
+        //     }
         //
         const data = response['data'];
         const result = [];
@@ -351,20 +400,27 @@ module.exports = class kucoin extends Exchange {
     async fetchAccounts (params = {}) {
         const response = await this.privateGetAccounts (params);
         //
-        //     { code:   "200000",
-        //       data: [ {   balance: "0.00009788",
+        //     {
+        //         code: "200000",
+        //         data: [
+        //             {
+        //                 balance: "0.00009788",
         //                 available: "0.00009788",
-        //                     holds: "0",
-        //                  currency: "BTC",
-        //                        id: "5c6a4fd399a1d81c4f9cc4d0",
-        //                      type: "trade"                     },
-        //               ...,
-        //               {   balance: "0.00000001",
+        //                 holds: "0",
+        //                 currency: "BTC",
+        //                 id: "5c6a4fd399a1d81c4f9cc4d0",
+        //                 type: "trade"
+        //             },
+        //             {
+        //                 balance: "0.00000001",
         //                 available: "0.00000001",
-        //                     holds: "0",
-        //                  currency: "ETH",
-        //                        id: "5c6a49ec99a1d819392e8e9f",
-        //                      type: "trade"                     }  ] }
+        //                 holds: "0",
+        //                 currency: "ETH",
+        //                 id: "5c6a49ec99a1d819392e8e9f",
+        //                 type: "trade"
+        //             }
+        //         ]
+        //     }
         //
         const data = this.safeValue (response, 'data');
         const result = [];
@@ -550,7 +606,7 @@ module.exports = class kucoin extends Exchange {
         return this.parseTicker (response['data'], market);
     }
 
-    parseOHLCV (ohlcv, market = undefined, timeframe = '1m', since = undefined, limit = undefined) {
+    parseOHLCV (ohlcv, market = undefined) {
         //
         //     [
         //         "1545904980",             // Start time of the candle cycle
@@ -563,12 +619,12 @@ module.exports = class kucoin extends Exchange {
         //     ]
         //
         return [
-            parseInt (ohlcv[0]) * 1000,
-            parseFloat (ohlcv[1]),
-            parseFloat (ohlcv[3]),
-            parseFloat (ohlcv[4]),
-            parseFloat (ohlcv[2]),
-            parseFloat (ohlcv[5]),
+            this.safeTimestamp (ohlcv, 0),
+            this.safeFloat (ohlcv, 1),
+            this.safeFloat (ohlcv, 3),
+            this.safeFloat (ohlcv, 4),
+            this.safeFloat (ohlcv, 2),
+            this.safeFloat (ohlcv, 5),
         ];
     }
 
@@ -598,8 +654,18 @@ module.exports = class kucoin extends Exchange {
         }
         request['endAt'] = parseInt (Math.floor (endAt / 1000));
         const response = await this.publicGetMarketCandles (this.extend (request, params));
-        const responseData = this.safeValue (response, 'data', []);
-        return this.parseOHLCVs (responseData, market, timeframe, since, limit);
+        //
+        //     {
+        //         "code":"200000",
+        //         "data":[
+        //             ["1591517700","0.025078","0.025069","0.025084","0.025064","18.9883256","0.4761861079404"],
+        //             ["1591516800","0.025089","0.025079","0.025089","0.02506","99.4716622","2.494143499081"],
+        //             ["1591515900","0.025079","0.02509","0.025091","0.025068","59.83701271","1.50060885172798"],
+        //         ]
+        //     }
+        //
+        const data = this.safeValue (response, 'data', []);
+        return this.parseOHLCVs (data, market, timeframe, since, limit);
     }
 
     async createDepositAddress (code, params = {}) {
@@ -655,7 +721,7 @@ module.exports = class kucoin extends Exchange {
     async fetchOrderBook (symbol, limit = undefined, params = {}) {
         const level = this.safeInteger (params, 'level', 2);
         let levelLimit = level.toString ();
-        if (level === '2') {
+        if (levelLimit === '2') {
             if (limit !== undefined) {
                 if ((limit !== 20) && (limit !== 100)) {
                     throw new ExchangeError (this.id + ' fetchOrderBook limit argument must be undefined, 20 or 100');
@@ -722,9 +788,10 @@ module.exports = class kucoin extends Exchange {
         await this.loadMarkets ();
         const marketId = this.marketId (symbol);
         // required param, cannot be used twice
-        const clientOid = this.uuid ();
+        const clientOrderId = this.safeString2 (params, 'clientOid', 'clientOrderId', this.uuid ());
+        params = this.omit (params, [ 'clientOid', 'clientOrderId' ]);
         const request = {
-            'clientOid': clientOid,
+            'clientOid': clientOrderId,
             'side': side,
             'symbol': marketId,
             'type': type,
@@ -764,7 +831,7 @@ module.exports = class kucoin extends Exchange {
             'datetime': this.iso8601 (timestamp),
             'fee': undefined,
             'status': 'open',
-            'clientOrderId': clientOid,
+            'clientOrderId': clientOrderId,
             'info': data,
         };
         if (!this.safeValue (params, 'quoteAmount')) {

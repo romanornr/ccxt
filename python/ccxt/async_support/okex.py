@@ -461,7 +461,7 @@ class okex(Exchange):
                     '33005': ExchangeError,  # {"code": 33005, "message": "repayment amount must exceed 0"}
                     '33006': ExchangeError,  # {"code": 33006, "message": "loan order not found"}
                     '33007': ExchangeError,  # {"code": 33007, "message": "status not found"}
-                    '33008': ExchangeError,  # {"code": 33008, "message": "loan amount cannot exceed the maximum limit"}
+                    '33008': InsufficientFunds,  # {"code": 33008, "message": "loan amount cannot exceed the maximum limit"}
                     '33009': ExchangeError,  # {"code": 33009, "message": "user ID is blank"}
                     '33010': ExchangeError,  # {"code": 33010, "message": "you cannot cancel an order during session 2 of call auction"}
                     '33011': ExchangeError,  # {"code": 33011, "message": "no new market data"}
@@ -1111,7 +1111,7 @@ class okex(Exchange):
             ticker = self.parse_ticker(response[i])
             symbol = ticker['symbol']
             result[symbol] = ticker
-        return result
+        return self.filter_by_array(result, 'symbol', symbols)
 
     async def fetch_tickers(self, symbols=None, params={}):
         defaultType = self.safe_string_2(self.options, 'fetchTickers', 'defaultType')
@@ -1286,7 +1286,7 @@ class okex(Exchange):
         #
         return self.parse_trades(response, market, since, limit)
 
-    def parse_ohlcv(self, ohlcv, market=None, timeframe='1m', since=None, limit=None):
+    def parse_ohlcv(self, ohlcv, market=None):
         #
         # spot markets
         #
@@ -1314,18 +1314,18 @@ class okex(Exchange):
         if isinstance(ohlcv, list):
             numElements = len(ohlcv)
             volumeIndex = 6 if (numElements > 6) else 5
-            timestamp = ohlcv[0]
+            timestamp = self.safe_value(ohlcv, 0)
             if isinstance(timestamp, basestring):
                 timestamp = self.parse8601(timestamp)
             return [
                 timestamp,  # timestamp
-                float(ohlcv[1]),            # Open
-                float(ohlcv[2]),            # High
-                float(ohlcv[3]),            # Low
-                float(ohlcv[4]),            # Close
-                # float(ohlcv[5]),         # Quote Volume
-                # float(ohlcv[6]),         # Base Volume
-                float(ohlcv[volumeIndex]),  # Volume, okex will return base volume in the 7th element for future markets
+                self.safe_float(ohlcv, 1),            # Open
+                self.safe_float(ohlcv, 2),            # High
+                self.safe_float(ohlcv, 3),            # Low
+                self.safe_float(ohlcv, 4),            # Close
+                # self.safe_float(ohlcv, 5),         # Quote Volume
+                # self.safe_float(ohlcv, 6),         # Base Volume
+                self.safe_float(ohlcv, volumeIndex),  # Volume, okex will return base volume in the 7th element for future markets
             ]
         else:
             return [
@@ -1345,43 +1345,61 @@ class okex(Exchange):
             'instrument_id': market['id'],
             'granularity': self.timeframes[timeframe],
         }
+        duration = self.parse_timeframe(timeframe)
         if since is not None:
+            if limit is not None:
+                request['end'] = self.iso8601(self.sum(since, limit * duration * 1000))
             request['start'] = self.iso8601(since)
+        else:
+            now = self.milliseconds()
+            if limit is not None:
+                request['start'] = self.iso8601(now - limit * duration * 1000)
+                request['end'] = self.iso8601(now)
         response = await getattr(self, method)(self.extend(request, params))
         #
         # spot markets
         #
-        #     [{ close: "0.02683401",
-        #           high: "0.02683401",
-        #            low: "0.02683401",
-        #           open: "0.02683401",
-        #           time: "2018-12-17T23:47:00.000Z",
-        #         volume: "0"                         },
-        #       ...
-        #       { close: "0.02684545",
-        #           high: "0.02685084",
-        #            low: "0.02683312",
-        #           open: "0.02683894",
-        #           time: "2018-12-17T20:28:00.000Z",
-        #         volume: "101.457222"                }  ]
+        #     [
+        #         {
+        #             close: "0.02683401",
+        #             high: "0.02683401",
+        #             low: "0.02683401",
+        #             open: "0.02683401",
+        #             time: "2018-12-17T23:47:00.000Z",
+        #             volume: "0"
+        #         },
+        #         {
+        #             close: "0.02684545",
+        #             high: "0.02685084",
+        #             low: "0.02683312",
+        #             open: "0.02683894",
+        #             time: "2018-12-17T20:28:00.000Z",
+        #             volume: "101.457222"
+        #         }
+        #     ]
         #
         # futures
         #
-        #     [[1545090660000,
-        #         0.3171,
-        #         0.3174,
-        #         0.3171,
-        #         0.3173,
-        #         1648,
-        #         51930.38579450868],
-        #       ...
-        #       [1545072720000,
-        #         0.3159,
-        #         0.3161,
-        #         0.3144,
-        #         0.3149,
-        #         22886,
-        #         725179.26172331]    ]
+        #     [
+        #         [
+        #             1545090660000,
+        #             0.3171,
+        #             0.3174,
+        #             0.3171,
+        #             0.3173,
+        #             1648,
+        #             51930.38579450868
+        #         ],
+        #         [
+        #             1545072720000,
+        #             0.3159,
+        #             0.3161,
+        #             0.3144,
+        #             0.3149,
+        #             22886,
+        #             725179.26172331
+        #         ]
+        #     ]
         #
         return self.parse_ohlcvs(response, market, timeframe, since, limit)
 
@@ -1751,6 +1769,10 @@ class okex(Exchange):
             # 'client_oid': 'abcdef1234567890',  # [a-z0-9]{1,32}
             # 'order_type': '0',  # 0: Normal limit order(Unfilled and 0 represent normal limit order) 1: Post only 2: Fill Or Kill 3: Immediatel Or Cancel
         }
+        clientOrderId = self.safe_string_2(params, 'client_oid', 'clientOrderId')
+        if clientOrderId is not None:
+            request['client_oid'] = clientOrderId
+            params = self.omit(params, ['client_oid', 'clientOrderId'])
         method = None
         if market['futures'] or market['swap']:
             size = self.number_to_string(amount) if market['futures'] else self.amount_to_precision(symbol, amount)
@@ -1808,7 +1830,10 @@ class okex(Exchange):
             raise ArgumentsRequired(self.id + ' cancelOrder() requires a symbol argument')
         await self.load_markets()
         market = self.market(symbol)
-        type = market['type']
+        defaultType = self.safe_string_2(self.options, 'cancelOrder', 'defaultType', market['type'])
+        type = self.safe_string(params, 'type', defaultType)
+        if type is None:
+            raise ArgumentsRequired(self.id + " cancelOrder requires a type parameter(one of 'spot', 'margin', 'futures', 'swap').")
         method = type + 'PostCancelOrder'
         request = {
             'instrument_id': market['id'],
@@ -1817,14 +1842,14 @@ class okex(Exchange):
             method += 'InstrumentId'
         else:
             method += 's'
-        clientOid = self.safe_string(params, 'client_oid')
-        if clientOid is not None:
+        clientOrderId = self.safe_string_2(params, 'client_oid', 'clientOrderId')
+        if clientOrderId is not None:
             method += 'ClientOid'
-            request['client_oid'] = clientOid
+            request['client_oid'] = clientOrderId
         else:
             method += 'OrderId'
             request['order_id'] = id
-        query = self.omit(params, 'type')
+        query = self.omit(params, ['type', 'client_oid', 'clientOrderId'])
         response = await getattr(self, method)(self.extend(request, query))
         result = response if ('result' in response) else self.safe_value(response, market['id'], {})
         #
@@ -2086,7 +2111,10 @@ class okex(Exchange):
             raise ArgumentsRequired(self.id + ' fetchOrdersByState requires a symbol argument')
         await self.load_markets()
         market = self.market(symbol)
-        type = market['type']
+        defaultType = self.safe_string_2(self.options, 'fetchOrder', 'defaultType', market['type'])
+        type = self.safe_string(params, 'type', defaultType)
+        if type is None:
+            raise ArgumentsRequired(self.id + " fetchOrder requires a type parameter(one of 'spot', 'margin', 'futures', 'swap').")
         request = {
             'instrument_id': market['id'],
             # '-2': failed,
@@ -2387,12 +2415,14 @@ class okex(Exchange):
         # fetchDeposits
         #
         #     {
-        #         amount: "0.47847546",
-        #         txid: "1723573_3_0_0_WALLET",
-        #         currency: "BTC",
-        #         to: "",
-        #         timestamp: "2018-08-16T03:41:10.000Z",
-        #         status: "2"
+        #         "amount": "4.19511659",
+        #         "txid": "14c9a8c925647cdb7e5b2937ea9aefe2b29b2c273150ad3f44b3b8a4635ed437",
+        #         "currency": "XMR",
+        #         "from": "",
+        #         "to": "48PjH3ksv1fiXniKvKvyH5UtFs5WhfS2Vf7U3TwzdRJtCc7HJWvCQe56dRahyhQyTAViXZ8Nzk4gQg6o4BJBMUoxNy8y8g7",
+        #         "deposit_id": 11571659, <-- we can use self
+        #         "timestamp": "2019-10-01T14:54:19.000Z",
+        #         "status": "2"
         #     }
         #
         type = None
@@ -2407,7 +2437,7 @@ class okex(Exchange):
             address = addressTo
         else:
             # the payment_id will appear on new deposits but appears to be removed from the response after 2 months
-            id = self.safe_string(transaction, 'payment_id')
+            id = self.safe_string_2(transaction, 'payment_id', 'deposit_id')
             type = 'deposit'
             address = addressTo
         currencyId = self.safe_string(transaction, 'currency')
@@ -2592,8 +2622,8 @@ class okex(Exchange):
         request = {
             'instrument_id': market['id'],
             # 'order_id': id,  # string
-            # 'after': '1',  # return the page after the specified page number
-            # 'before': '1',  # return the page before the specified page number
+            # 'after': '1',  # pagination of data to return records earlier than the requested ledger_id
+            # 'before': '1',  # P=pagination of data to return records newer than the requested ledger_id
             # 'limit': limit,  # optional, number of results per request, default = maximum = 100
         }
         defaultType = self.safe_string_2(self.options, 'fetchMyTrades', 'defaultType')
@@ -2868,6 +2898,9 @@ class okex(Exchange):
         #         },
         #     ]
         #
+        responseLength = len(response)
+        if responseLength < 1:
+            return []
         isArray = isinstance(response[0], list)
         isMargin = (type == 'margin')
         entries = response[0] if (isMargin and isArray) else response
