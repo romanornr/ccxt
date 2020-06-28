@@ -253,7 +253,7 @@ module.exports = class btse extends Exchange {
             'askVolume': undefined,
             'vwap': undefined,
             'open': undefined,
-            'close': undefined,
+            'close': this.safeFloat (ticker, 'last'),
             'last': this.safeFloat (ticker, 'last'),
             'previousClose': undefined,
             'change': undefined,
