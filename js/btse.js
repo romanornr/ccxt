@@ -240,9 +240,11 @@ module.exports = class btse extends Exchange {
     }
 
     parseTicker (ticker) {
+        const timestamp = this.milliseconds ();
         return {
             'symbol': this.safeString (ticker, 'symbol'),
-            'timestamp': this.milliseconds (),
+            'timestamp': timestamp,
+            'datetime': this.iso8601 (timestamp),
             'high': this.safeFloat2 (ticker, 'high24Hr'),
             'low': this.safeFloat2 (ticker, 'low24Hr'),
             'bid': this.safeFloat (ticker, 'highestBid'),
