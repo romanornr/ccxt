@@ -4,7 +4,7 @@
 
 const Exchange = require ('./base/Exchange');
 const { TICK_SIZE } = require ('./base/functions/number');
-const { InvalidOrder } = require ('./base/errors');
+const { InvalidOrder, ArgumentsRequired } = require ('./base/errors');
 
 //  ---------------------------------------------------------------------------
 
@@ -450,8 +450,11 @@ module.exports = class btse extends Exchange {
         return this.parseOrder (response[0]);
     }
 
-    async cancelOrder (id, symbol, params = {}) {
+    async cancelOrder (id, symbol = undefined, params = {}) {
         await this.loadMarkets ();
+        if (symbol === undefined) {
+            throw new ArgumentsRequired (this.id + ' cancelOrder() requires a `symbol` argument');
+        }
         const market = this.market (symbol);
         const request = {
             'symbol': market['id'],
@@ -549,14 +552,16 @@ module.exports = class btse extends Exchange {
         };
     }
 
-    async fetchOpenOrders (symbol, orderId, params = {}) {
+    async fetchOpenOrders (symbol = undefined, since = undefined, limit = undefined, params = {}) {
         await this.loadMarkets ();
+        const request = {};
+        if (symbol === undefined) {
+            throw new ArgumentsRequired (this.id + ' cancelOrder() requires a `symbol` argument');
+        }
         const market = this.market (symbol);
-        const request = {
-            'symbol': market['id'],
-        };
-        if (orderId !== undefined) {
-            request['orderID'] = orderId;
+        request['symbol'] = market['id'];
+        if (since !== undefined) {
+            request['orderID'] = since;
         }
         const defaultType = this.safeString2 (this.options, 'GetUserOpenOrders', 'defaultType', 'spot');
         const type = this.safeString (params, 'type', defaultType);
@@ -613,7 +618,7 @@ module.exports = class btse extends Exchange {
         };
     }
 
-    sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body = undefined) {
+    sign (path, api = 'api', method = 'GET', params = {}, headers = undefined, body = undefined) {
         let url = this.urls['api'][api] + '/' + this.implodeParams (path, params);
         let bodyText = undefined;
         if (method === 'GET' || method === 'DELETE') {
@@ -625,13 +630,13 @@ module.exports = class btse extends Exchange {
             this.checkRequiredCredentials ();
             bodyText = this.json (params);
             const signaturePath = this.cleanSignaturePath (api, this.urls['api'][api] + '/' + path);
-            headers = this.signHeaders (method, headers, signaturePath, bodyText);
+            headers = this.signHeaders (method, signaturePath, headers, bodyText);
         }
         body = (method === 'GET') ? null : bodyText;
         return { 'url': url, 'method': method, 'body': body, 'headers': headers };
     }
 
-    signHeaders (method, headers, signaturePath, bodyText = undefined) {
+    signHeaders (method, signaturePath, headers = {}, bodyText = undefined) {
         const nonce = this.nonce ();
         let signature = undefined;
         if (method === 'GET' || method === 'DELETE') {
