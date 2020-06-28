@@ -240,13 +240,13 @@ module.exports = class btse extends Exchange {
     }
 
     parseTicker (ticker) {
-        const timestamp = this.milliseconds ();
+        const timestamp = this.safeTimestamp (ticker, 'time', this.milliseconds ());
         return {
             'symbol': this.safeString (ticker, 'symbol'),
             'timestamp': timestamp,
             'datetime': this.iso8601 (timestamp),
-            'high': this.safeFloat2 (ticker, 'high24Hr'),
-            'low': this.safeFloat2 (ticker, 'low24Hr'),
+            'high': this.safeFloat (ticker, 'high24Hr'),
+            'low': this.safeFloat (ticker, 'low24Hr'),
             'bid': this.safeFloat (ticker, 'highestBid'),
             'bidVolume': undefined,
             'ask': this.safeFloat (ticker, 'lowestAsk'),
@@ -278,7 +278,7 @@ module.exports = class btse extends Exchange {
         const type = this.safeString (params, 'type', defaultType);
         const method = (type === 'spot') ? 'spotv3GetOrderbookL2' : 'futuresv2GetOrderbookL2';
         const response = await this[method] (this.extend (request, params));
-        const timestamp = this.safeTimestamp (response, 'timestamp');
+        const timestamp = response['timestamp'];
         const orderbook = this.parseOrderBook (response, timestamp, 'buyQuote', 'sellQuote', 'price', 'size');
         orderbook['nonce'] = this.safeInteger (response, 'timestamp');
         return orderbook;
@@ -297,7 +297,13 @@ module.exports = class btse extends Exchange {
         const type = this.safeString (params, 'type', defaultType);
         const method = (type === 'spot') ? 'spotv3GetTrades' : 'futuresv2GetTrades';
         const response = await this[method] (this.extend (request, params));
-        return this.parseTrades (response, market, since, limit);
+        const trades = this.parseTrades (response, market, since, limit);
+        for (let i = 0; i < trades.length; i++) {
+            trades[i]['cost'] = undefined;
+            trades[i]['takerOrMaker'] = undefined;
+            trades[i]['side'] = trades[i]['info']['side'].toLowerCase ();
+        }
+        return trades;
     }
 
     async fetchMyTrades (symbol = undefined, since = undefined, limit = undefined, params = {}) {
@@ -321,7 +327,7 @@ module.exports = class btse extends Exchange {
     }
 
     parseTrade (trade, market) {
-        const timestamp = this.safeValue (trade, 'timestamp');
+        const timestamp = this.parse8601 (this.safeString (trade, 'timestamp')); // this.safeValue (trade, 'timestamp');
         return {
             'id': this.safeString (trade, 'serialId'),
             'order': this.safeString (trade, 'orderID'),
@@ -523,7 +529,7 @@ module.exports = class btse extends Exchange {
     }
 
     parseOrder (order, market = undefined) {
-        const timestamp = this.safeValue (order, 'timestamp');
+        const timestamp = this.parse8601 (this.safeString (order, 'timestamp')); // this.safeValue (order, 'timestamp');
         const filled = this.safeFloat (order, 'fillSize');
         const amount = this.safeFloat (order, 'size');
         const remaining = amount - filled;
@@ -628,7 +634,7 @@ module.exports = class btse extends Exchange {
                 url += '?' + this.urlencode (params);
             }
         }
-        if (api.includes ('private')) {
+        if (api === 'spotv3private' || api === 'futuresv2private') {
             this.checkRequiredCredentials ();
             bodyText = this.json (params);
             const signaturePath = this.cleanSignaturePath (api, this.urls['api'][api] + '/' + path);
