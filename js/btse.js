@@ -5,7 +5,8 @@
 const Exchange = require ('./base/Exchange');
 const { TICK_SIZE } = require ('./base/functions/number');
 const { InvalidOrder } = require ('./base/errors');
-// const { } = require ('./base/errors');
+
+//  ---------------------------------------------------------------------------
 
 module.exports = class btse extends Exchange {
     describe () {
@@ -276,16 +277,6 @@ module.exports = class btse extends Exchange {
         const type = this.safeString (params, 'type', defaultType);
         const method = (type === 'spot') ? 'spotv3GetOrderbookL2' : 'futuresv2GetOrderbookL2';
         const response = await this[method] (this.extend (request, params));
-        // {
-        //     buyQuote: [
-        //         { price: "7568.0", size: "1.026"}
-        //     ],
-        //     sellQuote: [
-        //         { price: "21742.0", size: "3.970" }
-        //     ],
-        //     timestamp: 1587680929683,
-        //     symbol: "BTC-USD",
-        // }
         const timestamp = this.safeTimestamp (response, 'timestamp');
         const orderbook = this.parseOrderBook (response, timestamp, 'buyQuote', 'sellQuote', 'price', 'size');
         orderbook['nonce'] = this.safeInteger (response, 'timestamp');
@@ -301,16 +292,6 @@ module.exports = class btse extends Exchange {
         if (limit !== undefined) {
             request['count'] = limit;
         }
-        // [
-        //     {
-        //         price: 7467.5,
-        //         size: 31,
-        //         side: "BUY",
-        //         symbol: "BTCPFC",
-        //         serialId: 131840942,
-        //         timestamp: 1587685195324,
-        //     }
-        // ]
         const defaultType = this.safeString2 (this.options, 'GetTrades', 'defaultType', 'spot');
         const type = this.safeString (params, 'type', defaultType);
         const method = (type === 'spot') ? 'spotv3GetTrades' : 'futuresv2GetTrades';
@@ -425,8 +406,6 @@ module.exports = class btse extends Exchange {
         const response = await this[method] (this.extend (request, params));
         return {
             'info': response,
-            // 'maker': this.safeFloat (result, 'makerFee'),
-            // 'taker': this.safeFloat (result, 'takerFee'),
         };
     }
 
@@ -481,7 +460,7 @@ module.exports = class btse extends Exchange {
         const type = this.safeString (params, 'type', defaultType);
         const method = (type === 'spot') ? 'spotv3privateDeleteOrder' : 'futuresv2privateDeleteOrder';
         const response = await this[method] (this.extend (request, params));
-        if (response[0].message === 'ALL_ORDER_CANCELLED_SUCCESS') {
+        if (response[0]['message'] === 'ALL_ORDER_CANCELLED_SUCCESS') {
             return response[0];
         }
         return this.parseOrder (response[0]);
@@ -490,7 +469,7 @@ module.exports = class btse extends Exchange {
     async cancelAllOrders (symbol = undefined, params = {}) {
         await this.loadMarkets ();
         const request = {
-            'timeout': params.timeout ? params.timeout : 0,
+            'timeout': params['timeout'] ? params['timeout'] : 0,
         };
         if (symbol !== undefined) {
             return this.cancelOrder (undefined, symbol);
@@ -581,7 +560,8 @@ module.exports = class btse extends Exchange {
         const type = this.safeString (params, 'type', defaultType);
         const method = (type === 'spot') ? 'spotv3privateGetUserOpenOrders' : 'futuresv2privateGetUserOpenOrders';
         const response = await this[method] (this.extend (request, params));
-        return response.length ? this.parseOrder (response[0]) : [];
+        const length = response.length;
+        return length ? this.parseOrder (response[0]) : [];
     }
 
     async createDepositAddress (currency, params = {}) {
@@ -592,8 +572,8 @@ module.exports = class btse extends Exchange {
         const response = await this.spotv3privatePostUserWalletAddress (this.extend (request, params));
         return {
             'currency': currency,
-            'address': response.address,
-            'tag': response.created,
+            'address': response[0]['address'].split (':')[0],
+            'tag': response[0]['address'].split (':')[1],
             'info': response,
         };
     }
@@ -606,8 +586,8 @@ module.exports = class btse extends Exchange {
         const response = await this.spotv3privateGetUserWalletAddress (this.extend (request, params));
         return {
             'currency': currency,
-            'address': response.address,
-            'tag': response.created,
+            'address': response[0]['address'].split (':')[0],
+            'tag': response[0]['address'].split (':')[1],
             'info': response,
         };
     }
@@ -626,7 +606,7 @@ module.exports = class btse extends Exchange {
         }
         const response = await this.spotv3privatePostUserWalletWithdraw (this.extend (request, params));
         return {
-            'id': response.withdraw_id,
+            'id': response['withdraw_id'],
             'info': response,
         };
     }
