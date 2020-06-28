@@ -187,7 +187,8 @@ module.exports = class btse extends Exchange {
         const method = (type === 'spot') ? 'spotv3GetMarketSummary' : 'futuresv2GetMarketSummary';
         const response = await this[method] (query);
         const results = [];
-        response.forEach ((market) => {
+        for (let i = 0; i < response.length; i++) {
+            const market = response[i];
             const baseId = this.safeString (market, 'base');
             const quoteId = this.safeString (market, 'quote');
             const base = this.safeCurrencyCode (baseId);
@@ -221,7 +222,7 @@ module.exports = class btse extends Exchange {
                 },
                 'info': market,
             });
-        });
+        }
         return results;
     }
 
@@ -370,23 +371,25 @@ module.exports = class btse extends Exchange {
         const response = await this[method] (this.extend (params));
         const result = {};
         if (type === 'spot') {
-            response.forEach ((balance) => {
+            for (let i = 0; i < response.length; i++) {
+                const balance = response[i];
                 const code = this.safeCurrencyCode (this.safeString (balance, 'currency'));
                 const account = this.account ();
                 account['total'] = this.safeFloat (balance, 'total');
                 account['free'] = this.safeFloat (balance, 'available');
                 account['used'] = account['total'] - this.safeFloat (balance, 'available');
                 result[code] = account;
-            });
+            }
         } else {
-            response[0].assets.forEach ((balance) => {
+            for (let i = 0; i < response.length; i++) {
+                const balance = response[i];
                 const code = this.safeCurrencyCode (this.safeString (balance, 'currency'));
                 const account = this.account ();
                 account['total'] = this.safeFloat (balance, 'balance');
                 account['free'] = this.safeFloat (balance, 'balance');
                 account['used'] = 0;
                 result[code] = account;
-            });
+            }
         }
         result['info'] = response;
         return this.parseBalance (result);
