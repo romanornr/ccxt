@@ -89,7 +89,7 @@ module.exports = class btse extends Exchange {
                 'spotv3': {
                     'get': [
                         'time',
-                        'market_summary', // get all markets
+                        'market_summary',
                         'orderbook/L2',
                         'trades',
                         'account',
@@ -173,7 +173,6 @@ module.exports = class btse extends Exchange {
     async loadTimeDifference () {
         const type = this.safeString2 (this.options, 'fetchTime', 'defaultType', 'spot');
         const method = (type === 'spot') ? 'spotv3GetTime' : 'futuresv2GetTime';
-        // eslint-disable-next-line no-undef
         const response = await this[method];
         const after = this.milliseconds ();
         const serverTime = parseInt (response['epoch'] * 1000);
@@ -196,11 +195,11 @@ module.exports = class btse extends Exchange {
             const quote = this.safeCurrencyCode (quoteId);
             results.push ({
                 'id': this.safeValue (market, 'symbol'),
-                'symbol': `${base}/${quote}`,
-                base,
-                quote,
-                baseId,
-                quoteId,
+                'symbol': base + quote,
+                'base': base,
+                'quote': quote,
+                'baseId': baseId,
+                'quoteId': quoteId,
                 'active': this.safeValue (market, 'active'),
                 'precision': {
                     'price': this.safeFloat (market, 'minPriceIncrement'),
@@ -330,7 +329,7 @@ module.exports = class btse extends Exchange {
             'fee': this.safeFloat (trade, 'feeAmount'),
             'type': undefined,
             'datetime': this.iso8601 (timestamp),
-            timestamp,
+            'timestamp': timestamp,
             'info': trade,
         };
     }
@@ -341,7 +340,14 @@ module.exports = class btse extends Exchange {
         const type = this.safeString (params, 'type', defaultType);
         const method = (type === 'spot') ? 'spotv3privateGetUserWalletHistory' : 'futuresv2privateGetUserWalletHistory';
         const response = await this[method] (this.extend (params));
-        return response.filter ((response) => response['type'] === 'Deposit');
+        const result = [];
+        for (let i = 0; i < response.length; i++) {
+            const deposit = response[i];
+            if (deposit['type'] === 'Deposit') {
+                result.push (deposit);
+            }
+        }
+        return result;
     }
 
     async fetchBalance (params = {}) {
@@ -362,8 +368,8 @@ module.exports = class btse extends Exchange {
                 result[code] = account;
             }
         } else {
-            for (let i = 0; i < response.length; i++) {
-                const balance = response[i];
+            for (let i = 0; i < response[0]['assets'].length; i++) {
+                const balance = response[0]['assets'][i];
                 const code = this.safeCurrencyCode (this.safeString (balance, 'currency'));
                 const account = this.account ();
                 account['total'] = this.safeFloat (balance, 'balance');
@@ -396,7 +402,7 @@ module.exports = class btse extends Exchange {
 
     async fetchTradingFees (params = undefined) {
         await this.loadMarkets ();
-        const market = params ? this.market (params.symbol) : undefined;
+        const market = params ? this.market (params['symbol']) : undefined;
         const request = {
             'symbol': market ? market['id'].toUpperCase () : undefined,
         };
@@ -422,23 +428,19 @@ module.exports = class btse extends Exchange {
         if (price !== undefined) {
             priceToPrecision = parseFloat (this.priceToPrecision (symbol, price));
         }
-        switch (orderType.toUpperCase ()) {
-        case 'LIMIT':
+        const oType = orderType.toUpperCase ();
+        if (oType === 'LIMIT') {
             request['type'] = 'LIMIT';
             request['txType'] = 'LIMIT';
             request['price'] = priceToPrecision;
-            break;
-        case 'MARKET':
+        } else if (oType === 'MARKET') {
             request['type'] = 'MARKET';
-            break;
-        case 'STOP':
+        } else if (oType === 'STOP') {
             request['txType'] = 'STOP';
             request['stopPrice'] = priceToPrecision;
-            break;
-        case 'TRAILINGSTOP':
+        } else if (oType === 'TRAILINGSTOP') {
             request['trailValue'] = priceToPrecision;
-            break;
-        default:
+        } else {
             throw new InvalidOrder (this.id + ' createOrder () does not support order type ' + orderType + ', only limit, market, stop, trailingStop, or takeProfit orders are supported');
         }
         const defaultType = this.safeString2 (this.options, 'PostOrder', 'defaultType', 'spot');
@@ -499,7 +501,7 @@ module.exports = class btse extends Exchange {
         const types = {
             '76': 'limit',
             '77': 'market',
-            '80': 'peg', // TODO figure out correct terminology
+            '80': 'peg',
         };
         return this.safeString (types, type, type);
     }
@@ -528,18 +530,18 @@ module.exports = class btse extends Exchange {
         }
         return {
             'id': this.safeString (order, 'orderID'),
-            timestamp,
+            'timestamp': timestamp,
             'datetime': this.iso8601 (timestamp),
             'lastTradeTimestamp': undefined,
             'symbol': this.findSymbol (this.safeString (order, 'symbol'), market),
             'type': this.parseOrderType (this.safeString (order, 'orderType')),
             'side': this.safeString (order, 'side'),
-            price,
-            amount,
-            cost,
-            average,
-            filled,
-            remaining,
+            'price': price,
+            'amount': amount,
+            'cost': cost,
+            'average': average,
+            'filled': filled,
+            'remaining': remaining,
             'status': this.parseOrderStatus (this.safeString (order, 'status')),
             'fee': undefined,
             'trades': undefined,
@@ -599,7 +601,7 @@ module.exports = class btse extends Exchange {
         const request = {
             'currency': currency['id'],
             'amount': amount.toString (),
-            address,
+            'address': address,
         };
         if (tag !== undefined) {
             request['tag'] = tag;
@@ -611,7 +613,7 @@ module.exports = class btse extends Exchange {
         };
     }
 
-    sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body) {
+    sign (path, api = 'api', method = 'GET', params = {}, headers = {}, body = undefined) {
         let url = this.urls['api'][api] + '/' + this.implodeParams (path, params);
         let bodyText = undefined;
         if (method === 'GET' || method === 'DELETE') {
@@ -621,7 +623,7 @@ module.exports = class btse extends Exchange {
         }
         if (api.includes ('private')) {
             this.checkRequiredCredentials ();
-            bodyText = JSON.stringify (params);
+            bodyText = this.json (params);
             const signaturePath = this.cleanSignaturePath (api, this.urls['api'][api] + '/' + path);
             headers = this.signHeaders (method, headers, signaturePath, bodyText);
         }
@@ -631,8 +633,7 @@ module.exports = class btse extends Exchange {
 
     signHeaders (method, headers, signaturePath, bodyText = undefined) {
         const nonce = this.nonce ();
-        // eslint-disable-next-line init-declarations
-        let signature;
+        let signature = undefined;
         if (method === 'GET' || method === 'DELETE') {
             signature = this.createSignature (this.secret, nonce, signaturePath);
         } else {
@@ -651,8 +652,10 @@ module.exports = class btse extends Exchange {
     }
 
     cleanSignaturePath (api, url) {
-        return (api === 'spotv3private')
-            ? url.replace ('https://api.btse.com/spot/', '')
-            : url.replace ('https://api.btse.com/futures/', '');
+        if (api === 'spotv3private') {
+            return url.replace ('https://api.btse.com/spot/', '');
+        } else {
+            return url.replace ('https://api.btse.com/futures/', '');
+        }
     }
 };
