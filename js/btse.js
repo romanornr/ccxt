@@ -429,12 +429,12 @@ module.exports = class btse extends Exchange {
         const request = {
             'symbol': market['id'].toUpperCase (),
             'side': side.toUpperCase (),
-            'size': parseFloat (this.amountToPrecision (symbol, size)),
+            'size': parseFloat (size),
             'time_in_force': 'GTC',
         };
         let priceToPrecision = undefined;
         if (price !== undefined) {
-            priceToPrecision = parseFloat (this.priceToPrecision (symbol, price));
+            priceToPrecision = parseFloat (price);
         }
         const oType = orderType.toUpperCase ();
         if (oType === 'LIMIT') {
@@ -529,7 +529,7 @@ module.exports = class btse extends Exchange {
     }
 
     parseOrder (order, market = undefined) {
-        const timestamp = this.parse8601 (this.safeString (order, 'timestamp')); // this.safeValue (order, 'timestamp');
+        const timestamp = this.safeValue (order, 'timestamp');
         const filled = this.safeFloat (order, 'fillSize');
         const amount = this.safeFloat (order, 'size');
         const remaining = amount - filled;
