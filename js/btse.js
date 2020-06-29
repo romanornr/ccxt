@@ -529,7 +529,7 @@ module.exports = class btse extends Exchange {
     }
 
     parseOrder (order, market = undefined) {
-        const timestamp = this.parse8601 (this.safeString (order, 'timestamp')); // this.safeValue (order, 'timestamp');
+        const timestamp = this.safeValue (order, 'timestamp');
         const filled = this.safeFloat (order, 'fillSize');
         const amount = this.safeFloat (order, 'size');
         const remaining = amount - filled;
