@@ -322,11 +322,10 @@ module.exports = class btse extends Exchange {
         const type = this.safeString (params, 'type', defaultType);
         const method = (type === 'spot') ? 'spotv3privateGetUserTradeHistory' : 'futuresv2privateGetUserTradeHistory';
         const response = await this[method] (this.extend (request, params));
-        const trades = this.safeValue (response, 'result', []);
-        return this.parseTrades (trades, market, since, limit);
+        return this.parseTrades (response, market, since, limit);
     }
 
-    parseTrade (trade, market) {
+    parseTrade (trade, market = undefined) {
         const timestamp = this.parse8601 (this.safeString (trade, 'timestamp')); // this.safeValue (trade, 'timestamp');
         return {
             'id': this.safeString (trade, 'serialId'),
@@ -443,6 +442,7 @@ module.exports = class btse extends Exchange {
             request['price'] = priceToPrecision;
         } else if (oType === 'MARKET') {
             request['type'] = 'MARKET';
+            request['price'] = priceToPrecision; // TODO delete
         } else if (oType === 'STOP') {
             request['txType'] = 'STOP';
             request['stopPrice'] = priceToPrecision;
