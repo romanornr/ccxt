@@ -326,7 +326,7 @@ module.exports = class btse extends Exchange {
     }
 
     parseTrade (trade, market = undefined) {
-        const timestamp = this.safeString (trade, 'timestamp');
+        const timestamp = this.safeValue (trade, 'timestamp');
         const price = this.safeFloat (trade, 'price');
         const amount = this.safeFloat (trade, 'size');
         let cost = undefined;
