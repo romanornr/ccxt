@@ -450,7 +450,6 @@ module.exports = class btse extends Exchange {
             request['price'] = priceToPrecision;
         } else if (oType === 'MARKET') {
             request['type'] = 'MARKET';
-            request['price'] = priceToPrecision; // TODO delete
         } else if (oType === 'STOP') {
             request['txType'] = 'STOP';
             request['stopPrice'] = priceToPrecision;
