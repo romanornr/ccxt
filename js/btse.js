@@ -326,7 +326,7 @@ module.exports = class btse extends Exchange {
     }
 
     parseTrade (trade, market = undefined) {
-        const timestamp = this.parse8601 (this.safeString (trade, 'timestamp')); // this.safeValue (trade, 'timestamp');
+        const timestamp = this.safeString (trade, 'timestamp');
         const price = this.safeFloat (trade, 'price');
         const amount = this.safeFloat (trade, 'size');
         let cost = undefined;
@@ -343,8 +343,8 @@ module.exports = class btse extends Exchange {
             'fee': this.safeFloat (trade, 'feeAmount'),
             'type': undefined,
             'side': this.safeString (trade, 'side'),
-            'datetime': this.iso8601 (timestamp), // TODO needs fix
-            'timestamp': this.safeValue (trade, 'timestamp'),
+            'datetime': this.iso8601 (timestamp),
+            'timestamp': timestamp,
             'info': trade,
         };
     }
@@ -458,6 +458,9 @@ module.exports = class btse extends Exchange {
             request['price'] = priceToPrecision;
         } else if (oType === 'MARKET') {
             request['type'] = 'MARKET';
+            if (params['currency']) {
+                request['currency'] = params['currency'];
+            }
         } else if (oType === 'STOP') {
             request['txType'] = 'STOP';
             request['stopPrice'] = priceToPrecision;
