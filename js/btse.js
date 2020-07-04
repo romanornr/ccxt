@@ -322,22 +322,29 @@ module.exports = class btse extends Exchange {
         const type = this.safeString (params, 'type', defaultType);
         const method = (type === 'spot') ? 'spotv3privateGetUserTradeHistory' : 'futuresv2privateGetUserTradeHistory';
         const response = await this[method] (this.extend (request, params));
-        const trades = this.safeValue (response, 'result', []);
-        return this.parseTrades (trades, market, since, limit);
+        return this.parseTrades (response, market, since, limit);
     }
 
-    parseTrade (trade, market) {
+    parseTrade (trade, market = undefined) {
         const timestamp = this.parse8601 (this.safeString (trade, 'timestamp')); // this.safeValue (trade, 'timestamp');
+        const price = this.safeFloat (trade, 'price');
+        const amount = this.safeFloat (trade, 'size');
+        let cost = undefined;
+        if (price !== undefined && amount !== undefined) {
+            cost = price * amount;
+        }
         return {
             'id': this.safeString (trade, 'serialId'),
-            'order': this.safeString (trade, 'orderID'),
+            'order': this.safeString (trade, 'orderId'),
             'symbol': market['symbol'],
             'price': this.safeFloat (trade, 'price'),
             'amount': this.safeFloat (trade, 'size'),
+            'cost': cost,
             'fee': this.safeFloat (trade, 'feeAmount'),
             'type': undefined,
-            'datetime': this.iso8601 (timestamp),
-            'timestamp': timestamp,
+            'side': this.safeString (trade, 'side'),
+            'datetime': this.iso8601 (timestamp), // TODO needs fix
+            'timestamp': this.safeValue (trade, 'timestamp'),
             'info': trade,
         };
     }
