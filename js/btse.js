@@ -415,19 +415,27 @@ module.exports = class btse extends Exchange {
         return this.parseOHLCVs (response, market['id'].toUpperCase (), timeframe, since, limit);
     }
 
-    async fetchTradingFees (params = undefined) {
+    async fetchTradingFees (symbol = undefined, params = {}) {
         await this.loadMarkets ();
-        const market = params ? this.market (params['symbol']) : undefined;
+        const market = symbol ? this.market (symbol) : undefined;
         const request = {
             'symbol': market ? market['id'].toUpperCase () : undefined,
         };
         const defaultType = this.safeString2 (this.options, 'GetTradingFees', 'defaultType', 'spot');
         const type = this.safeString (params, 'type', defaultType);
         const method = (type === 'spot') ? 'spotv3privateGetUserFees' : 'futuresv2privateGetUserFees';
-        const response = await this[method] (this.extend (request, params));
-        return {
-            'info': response,
-        };
+        const response = await this[method] (this.extend (request));
+        if (!symbol) {
+            return {
+                'info': response,
+            };
+        } else {
+            return {
+                'info': response,
+                'maker': this.safeFloat (response[0], 'makerFee'),
+                'taker': this.safeFloat (response[0], 'takerFee'),
+            };
+        }
     }
 
     async createOrder (symbol, orderType, side, size, price = undefined, params = {}) {
