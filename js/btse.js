@@ -326,7 +326,7 @@ module.exports = class btse extends Exchange {
     }
 
     parseTrade (trade, market = undefined) {
-        const timestamp = this.parse8601 (this.safeString (trade, 'timestamp')); // this.safeValue (trade, 'timestamp');
+        const timestamp = this.safeValue (trade, 'timestamp');
         const price = this.safeFloat (trade, 'price');
         const amount = this.safeFloat (trade, 'size');
         let cost = undefined;
@@ -343,8 +343,8 @@ module.exports = class btse extends Exchange {
             'fee': this.safeFloat (trade, 'feeAmount'),
             'type': undefined,
             'side': this.safeString (trade, 'side'),
-            'datetime': this.iso8601 (timestamp), // TODO needs fix
-            'timestamp': this.safeValue (trade, 'timestamp'),
+            'datetime': this.iso8601 (timestamp),
+            'timestamp': timestamp,
             'info': trade,
         };
     }
@@ -415,19 +415,27 @@ module.exports = class btse extends Exchange {
         return this.parseOHLCVs (response, market['id'].toUpperCase (), timeframe, since, limit);
     }
 
-    async fetchTradingFees (params = undefined) {
+    async fetchTradingFees (symbol = undefined, params = {}) {
         await this.loadMarkets ();
-        const market = params ? this.market (params['symbol']) : undefined;
+        const market = symbol ? this.market (symbol) : undefined;
         const request = {
             'symbol': market ? market['id'].toUpperCase () : undefined,
         };
         const defaultType = this.safeString2 (this.options, 'GetTradingFees', 'defaultType', 'spot');
         const type = this.safeString (params, 'type', defaultType);
         const method = (type === 'spot') ? 'spotv3privateGetUserFees' : 'futuresv2privateGetUserFees';
-        const response = await this[method] (this.extend (request, params));
-        return {
-            'info': response,
-        };
+        const response = await this[method] (this.extend (request));
+        if (!symbol) {
+            return {
+                'info': response,
+            };
+        } else {
+            return {
+                'info': response,
+                'maker': this.safeFloat (response[0], 'makerFee'),
+                'taker': this.safeFloat (response[0], 'takerFee'),
+            };
+        }
     }
 
     async createOrder (symbol, orderType, side, size, price = undefined, params = {}) {
@@ -436,12 +444,12 @@ module.exports = class btse extends Exchange {
         const request = {
             'symbol': market['id'].toUpperCase (),
             'side': side.toUpperCase (),
-            'size': parseFloat (this.amountToPrecision (symbol, size)),
+            'size': parseFloat (size),
             'time_in_force': 'GTC',
         };
         let priceToPrecision = undefined;
         if (price !== undefined) {
-            priceToPrecision = parseFloat (this.priceToPrecision (symbol, price));
+            priceToPrecision = parseFloat (price);
         }
         const oType = orderType.toUpperCase ();
         if (oType === 'LIMIT') {
@@ -450,6 +458,9 @@ module.exports = class btse extends Exchange {
             request['price'] = priceToPrecision;
         } else if (oType === 'MARKET') {
             request['type'] = 'MARKET';
+            if (params['currency']) {
+                request['currency'] = params['currency'];
+            }
         } else if (oType === 'STOP') {
             request['txType'] = 'STOP';
             request['stopPrice'] = priceToPrecision;
