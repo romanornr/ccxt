@@ -39,10 +39,10 @@ const exchange = new ccxt.btse ({
     'secret': 'OWU2ZGUwZTI1OGE0NGI4',
 });
 
-const symbol = 'BTC/USD'; // edit here
-const type = 'limit';     // edit here
+const symbol = 'BTCUSD'; // edit here
+const type = 'LIMIT';     // edit here
 const side = 'BUY';       // edit here
-const amount = '0.002';         // edit here
+const amount = '0.001';         // edit here
 const price = '1000';       // edit here
 const params = {}        // edit here
 

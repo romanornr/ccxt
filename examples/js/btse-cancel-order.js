@@ -6,18 +6,19 @@ const log       = require ('ololog').configure ({ locate: false })
 
 (async function() {
     const exchange = new ccxt.btse ({
-        'apiKey': 'MjIyOGU1NDAyOWVkNDI4Njg1ZWVjMzMwY2E1YzZhOTQ=',
-        'secret': 'M2I5NTMzZGE4MGViNDIy',
+        'apiKey': 'NmU5NjBkODk4ZmNjNDE0MDlhMGM1MmU3OWIxYTY2YjU=',
+        'secret': 'OWU2ZGUwZTI1OGE0NGI4',
     });
 
-    const symbol = 'BTC/USD'; // edit here
-    const id = 'f0403eff-ecd0-4a0d-9006-1fb6761b6927' // edit here
+    const symbol = 'BTCUSD'; // edit here
+    const id = 'bd0d81d7-1c3d-4580-9632-e833196c7e29' // edit here
 
     const params = {}        // edit here
 
-    let order = await exchange.cancelOrder(id, symbol, params)
+    //let order = await exchange.cancelOrder(id, symbol, params)
     //let order = await exchange.cancelAllOrders(symbol)
-    console.log (order)
+    console.log(await exchange.cancelAllOrders(symbol))
+    //console.log (order)
 }) ()
 
 
