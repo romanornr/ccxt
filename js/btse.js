@@ -16,6 +16,7 @@ module.exports = class btse extends Exchange {
             'countries': ['BVI'],
             'userAgent': 'sdk_ccxt/btse',
             'rateLimit': 3000,
+            'certified': false,
             'has': {
                 'CORS': true,
                 'cancelAllOrders': true,
