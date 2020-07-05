@@ -639,7 +639,7 @@ module.exports = class btse extends Exchange {
         }
         const response = await this.spotv3privatePostUserWalletWithdraw (this.extend (request, params));
         return {
-            'id': response['withdraw_id'],
+            'id': response['withdrawId:'],
             'info': response,
         };
     }
