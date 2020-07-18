@@ -659,7 +659,7 @@ module.exports = class btse extends Exchange {
             const signaturePath = this.cleanSignaturePath (api, this.urls['api'][api] + '/' + path);
             headers = this.signHeaders (method, signaturePath, headers, bodyText);
         }
-        body = (method === 'GET') ? null : bodyText;
+        body = (method === 'GET') ? undefined : bodyText;
         return { 'url': url, 'method': method, 'body': body, 'headers': headers };
     }
 
@@ -679,7 +679,7 @@ module.exports = class btse extends Exchange {
     }
 
     createSignature (key, nonce, path, body = undefined) {
-        const content = body == null ? this.encode ('/' + path + nonce) : this.encode ('/' + path + nonce + body);
+        const content = body === undefined ? this.encode ('/' + path + nonce) : this.encode ('/' + path + nonce + body);
         return this.hmac (content, key, 'sha384');
     }
 
