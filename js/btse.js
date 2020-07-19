@@ -686,10 +686,8 @@ module.exports = class btse extends Exchange {
 
     signHeaders (method, signaturePath, headers = {}, bodyText = undefined) {
         const nonce = this.nonce ();
-        let signature = undefined;
-        if (method === 'GET' || method === 'DELETE') {
-            signature = this.createSignature (this.secret, nonce, signaturePath);
-        } else {
+        let signature = this.createSignature (this.secret, nonce, signaturePath);
+        if (!(method === 'GET' || method === 'DELETE')) {
             signature = this.createSignature (this.secret, nonce, signaturePath, bodyText);
         }
         headers['btse-nonce'] = nonce;
