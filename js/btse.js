@@ -560,11 +560,10 @@ module.exports = class btse extends Exchange {
 
     findSymbol (marketId, market) {
         if (market === undefined) {
-            if (marketId in this.markets_by_id) {
-                market = this.markets_by_id[marketId];
-            } else {
+            if (marketId in !this.markets_by_id) {
                 return marketId;
             }
+            market = this.markets_by_id[marketId];
         }
         return market['symbol'];
     }
