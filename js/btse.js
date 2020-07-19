@@ -707,8 +707,7 @@ module.exports = class btse extends Exchange {
     cleanSignaturePath (api, url) {
         if (api === 'spotv3private') {
             return url.replace ('https://api.btse.com/spot/', '');
-        } else {
-            return url.replace ('https://api.btse.com/futures/', '');
         }
+        return url.replace ('https://api.btse.com/futures/', '');
     }
 };
