@@ -195,12 +195,12 @@ module.exports = class btse extends Exchange {
             const base = this.safeCurrencyCode (baseId);
             const quote = this.safeCurrencyCode (quoteId);
             let marketType = 'spot';
-            let active = this.safeValue (market, 'active');
+            const active = this.safeValue (market, 'active');
             const settleTime = this.safeInteger (market, 'contractEnd', 0);
             if (type !== 'spot') {
                 marketType = (settleTime > 0) ? 'future' : 'swap';
             }
-            let lotSize = this.SafeFloat (market, 'contractSize', 0);
+            let lotSize = this.safeFloat (market, 'contractSize', 0);
             if (!lotSize) {
                 lotSize = 1;
             }
