@@ -522,12 +522,12 @@ module.exports = class btse extends Exchange {
 
     async cancelAllOrders (symbol = undefined, params = {}) {
         await this.loadMarkets ();
-        const request = {
-            'timeout': params['timeout'] ? params['timeout'] : 0,
-        };
         if (symbol !== undefined) {
             return this.cancelOrder (undefined, symbol);
         }
+        const request = {
+            'timeout': params['timeout'] ? params['timeout'] : 0,
+        };
         const defaultType = this.safeString2 (this.options, 'OrderCancelAllAfter', 'defaultType', 'spot');
         const type = this.safeString (params, 'type', defaultType);
         const method = (type === 'spot') ? 'spotv3privatePostOrderCancelAllAfter' : 'futuresv2privatePostOrderCancelAllAfter';
