@@ -482,6 +482,7 @@ module.exports = class btse extends Exchange {
         } else if (oType === 'MARKET') {
             request['type'] = 'MARKET';
             if (params['currency']) {
+                request['price'] = '';
                 request['currency'] = params['currency'];
             }
         } else if (oType === 'STOP') {
