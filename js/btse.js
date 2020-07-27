@@ -150,11 +150,17 @@ module.exports = class btse extends Exchange {
                 },
             },
             'fees': {
-                'trading': {
+                'tradingSpot': {
                     'tierBased': false,
                     'percentage': true,
                     'maker': 0.05 / 100,
                     'taker': 0.10 / 100,
+                },
+                'tradingFutures': {
+                    'tierBased': false,
+                    'percentage': true,
+                    'maker': -0.01 / 100,
+                    'taker': 0.06 / 100,
                 },
             },
             'exceptions': {},
