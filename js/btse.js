@@ -458,13 +458,12 @@ module.exports = class btse extends Exchange {
             return {
                 'info': response,
             };
-        } else {
-            return {
-                'info': response,
-                'maker': this.safeFloat (response[0], 'makerFee'),
-                'taker': this.safeFloat (response[0], 'takerFee'),
-            };
         }
+        return {
+            'info': response,
+            'maker': this.safeFloat (response[0], 'makerFee'),
+            'taker': this.safeFloat (response[0], 'takerFee'),
+        };
     }
 
     async createOrder (symbol, orderType, side, size, price = undefined, params = {}) {
