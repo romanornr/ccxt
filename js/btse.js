@@ -622,7 +622,7 @@ module.exports = class btse extends Exchange {
         const method = (type === 'spot') ? 'spotv3privateGetUserOpenOrders' : 'futuresv2privateGetUserOpenOrders';
         const response = await this[method] (this.extend (request, params));
         const length = response.length;
-        return length ? this.parseOrder (response[0]) : [];
+        return length ? response.map(this.parseOrder.bind(this)) : [];
     }
 
     async createDepositAddress (currency, params = {}) {
