@@ -399,19 +399,27 @@ module.exports = class btse extends Exchange {
         const method = (type === 'spot') ? 'spotv3privateGetUserWallet' : 'futuresv2privateGetUserWallet';
         const response = await this[method] (this.extend (params));
         const result = {};
-        const account = this.account ();
-        for (let i = 0; i < response.length; i++) {
-            const balance = response[i];
-            const code = this.safeCurrencyCode (this.safeString (balance, 'currency'));
-            account['total'] = this.safeFloat (balance, 'total');
-            account['free'] = this.safeFloat (balance, 'available');
-            account['used'] = 0;
-            if (type === 'spot') {
+        if (type === 'spot') {
+            for (let i = 0; i < response.length; i++) {
+                const balance = response[i];
+                const code = this.safeCurrencyCode (this.safeString (balance, 'currency'));
+                const account = this.account ();
+                account['total'] = this.safeFloat (balance, 'total');
+                account['free'] = this.safeFloat (balance, 'available');
                 account['used'] = account['total'] - this.safeFloat (balance, 'available');
+                result[code] = account;
             }
-            result[code] = account;
+        } else {
+            for (let i = 0; i < response[0]['assets'].length; i++) {
+                const balance = response[0]['assets'][i];
+                const code = this.safeCurrencyCode (this.safeString (balance, 'currency'));
+                const account = this.account ();
+                account['total'] = this.safeFloat (balance, 'balance');
+                account['free'] = this.safeFloat (balance, 'balance');
+                account['used'] = 0;
+                result[code] = account;
+            }
         }
-        result['info'] = response;
         return this.parseBalance (result);
     }
 
@@ -623,7 +631,7 @@ module.exports = class btse extends Exchange {
         const method = (type === 'spot') ? 'spotv3privateGetUserOpenOrders' : 'futuresv2privateGetUserOpenOrders';
         const response = await this[method] (this.extend (request, params));
         const length = response.length;
-        return length ? response.map(this.parseOrder.bind(this)) : [];
+        return length ? response.map (this.parseOrder.bind (this)) : [];
     }
 
     async createDepositAddress (currency, params = {}) {

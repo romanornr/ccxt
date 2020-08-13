@@ -114,10 +114,10 @@ const exchange = new ccxt.btse ({
 //     console.log(await exchange.fetchDepositAddress(symbol));
 // })();
 
-(async function() {
-    const symbol = 'BTCUSD'; // edit here
-    console.log(await exchange.withdraw("BTC", 0.0010, "bc1qs2gttl2320v0kcjkd0ajpu7452nrghnrt5ppzp"))
-})();
+// (async function() {
+//     const symbol = 'BTCUSD'; // edit here
+//     console.log(await exchange.withdraw("BTC", 0.0010, "bc1qs2gttl2320v0kcjkd0ajpu7452nrghnrt5ppzp"))
+// })();
 
 
 // (async function() {
@@ -137,11 +137,11 @@ const exchange = new ccxt.btse ({
 //         console.log (await exchange.fetchMyTrades(symbol))
 //     }) ()
 
-    // /** TRADES **/
-    // (async function(){
-    //     const btse = new ccxt.btse({
-    //         //options: { defaultType: 'spot' }
-    //     });
-    //     const symbol = 'BTCUSD';
-    //     console.log (await btse.fetchTrades(symbol))
-    // }) ()
+    /** TRADES **/
+    (async function(){
+        const btse = new ccxt.btse({
+            //options: { defaultType: 'spot' }
+        });
+        const symbol = 'BTC/USD';
+        console.log (await exchange.fetchBalance());
+    }) ()
